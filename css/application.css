@@ -1,0 +1,17 @@
+html {
+	line-height: 4ex;
+}
+#form div {
+	line-height: 4ex;
+}
+
+#form label {
+	display: inline-block;
+	width: 6em;
+}
+#form label:after {
+	content:  ": ";
+}
+sub {
+	font-style: italic;
+}

@@ -3,7 +3,7 @@
 
 import { NoteInput, NoteFrequency } from './note_input';
 import { RadioGroup } from './radio_group';
-import { SineWaveData } from './sine_wave_data';
+import { WaveData } from './wave_data';
 
 function calc_sr(osc) {
 	// iigs is ~7.14Mhz / 8.  Mirage is 8Mhz / 8
@@ -64,6 +64,26 @@ function Frequency(props) {
 
 	/* number, min, max are not as strict as they ought to be */
 	return <input type="number" min="0" max="65535" value={props.value} onChange={props.onChange} />;
+}
+
+
+
+function Assembler(props) {
+
+	var options = ["Merlin", "ORCA/M"].map( (o, ix) => {
+		return <option key={ix} value={ix}>{o}</option>;
+	});
+
+	return <select {...props}>{options}</select>;
+}
+
+function WaveShape(props) {
+
+	var options = ["Sine", "Square", "Triangle", "Sawtooth"].map( (o, ix) => {
+		return <option key={ix} value={ix}>{o}</option>;
+	});
+
+	return <select {...props}>{options}</select>;	
 }
 
 
@@ -148,7 +168,6 @@ function NoteDisplay(props) {
 			<div>Wave Size: 256</div>
 			<div>Resolution: {best_res}</div>
 			<div>Frequency: {Math.round(best_freq)}</div>
-			<SineWaveData />
 		</>
 
 	);
@@ -172,8 +191,10 @@ export class Application extends preact.Component {
 		this._freqChange = this.freqChange.bind(this);
 		this._noteChange = this.noteChange.bind(this);
 		this._tabChange = this.tabChange.bind(this);
+		this._asmChange = this.asmChange.bind(this);
+		this._shapeChange = this.shapeChange.bind(this);
 
-		this.state = { osc: 32, wave: 0, res: 0, freq: 512, tab: 0, note: 4*12 };
+		this.state = { osc: 32, wave: 0, res: 0, freq: 512, tab: 0, note: 4*12, assembler: 0, shape: 0 };
 	}
 
 	oscChange(e) {
@@ -210,6 +231,18 @@ export class Application extends preact.Component {
 
 	noteChange(v) {
 		this.setState({ note: v });
+	}
+
+	asmChange(e) {
+		e.preventDefault();
+		var v = +e.target.value;
+		this.setState({ assembler: v});
+	}
+
+	shapeChange(e) {
+		e.preventDefault();
+		var v = +e.target.value;
+		this.setState({ shape: v});
 	}
 
 	sampleChildren() {
@@ -257,6 +290,24 @@ export class Application extends preact.Component {
 
 	}
 
+	waveChildren() {
+
+		var { assembler, shape } = this.state;
+		return (
+			<>
+				<div>
+					<label>Assembler</label> <Assembler value={assembler} onChange={this._asmChange} />
+				</div>
+
+				<div>
+					<label>Wave Type</label> <WaveShape value={shape} onChange={this._shapeChange} />
+				</div>
+
+				<WaveData assembler={assembler} shape={shape} />
+			</>
+		);
+	}
+
 
 	render() {
 
@@ -268,9 +319,10 @@ export class Application extends preact.Component {
 		switch(tab){
 			case 0: children = this.sampleChildren(); break;
 			case 1: children = this.noteChildren(); break;
+			case 2: children = this.waveChildren(); break;
 		}
 
-		var options = ["Sample", "Note"].map( (o, ix) => {
+		var options = ["Sample", "Note", "Wave"].map( (o, ix) => {
 			return <option key={ix} value={ix}>{o}</option>;
 		});
 

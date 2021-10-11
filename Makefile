@@ -2,7 +2,7 @@
 
 all: js/application.js js/preact.min.js | js
 
-js/application.js : src/main.jsx src/application.jsx src/note_input.jsx src/radio_group.jsx
+js/application.js : src/main.jsx src/application.jsx src/note_input.jsx src/sine_wave_data.jsx
 	esbuild --bundle --jsx-factory=preact.h --jsx-fragment=preact.Fragment --format=esm \
 	src/main.jsx --outfile=js/application.js 
 

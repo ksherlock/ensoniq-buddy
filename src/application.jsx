@@ -3,7 +3,7 @@
 
 import { NoteInput, NoteFrequency } from './note_input';
 import { RadioGroup } from './radio_group';
-
+import { SineWaveData } from './sine_wave_data';
 
 function calc_sr(osc) {
 	// iigs is ~7.14Mhz / 8.  Mirage is 8Mhz / 8
@@ -70,7 +70,7 @@ function Frequency(props) {
 function nmultiply(x) {
 	if (x == 0) return 0;
 	if (x == 1) return <i>n</i>;
-	return <span>{x} * <i>n</i></span>;
+	return <>{x} * <i>n</i></>;
 	// return paren ? <span>({x} * <i>n</i>)</span> : <span>{x} * <i>n</i></span>;
 }
 function SampleDisplay(props) {
@@ -118,34 +118,21 @@ function SampleDisplay(props) {
 	return rv;
 }
 
-function SineWave() {
 
-	var rv = [];
-	for (n = 0; n < 256; ++n) {
-		var x = 128 + Math.round(127 * Math.sin(n * Math.PI / 128));
-		var y = x.toString(16); if (y.length < 2) y = "0" + y;
-		rv.push( y );
-		if ((n & 0x07) == 0x07) rv.push("\n");
-		else rv.push(', ');
-	}
-
-	return (
-		<code>
-		<pre>
-		{rv}
-		</pre>
-		</code>
-	);
-}
 function NoteDisplay(props) {
 
 
-	var { osc, wave, note } = props;
+	var { osc, note } = props;
+
+	const wave = 0; // 256
 
 	const sr = calc_sr(osc);
 	const note_frq = NoteFrequency(note);
 
 	const f = note_frq / (sr / (1 << (8 + wave)));
+
+	// best_res = 7 - Math.ceil(Math.log2(f)) ?
+	// best_freq = f * (1 << calc_shift(best_res, 0)) ?
 
 	var best_res = 0;
 	var best_freq = 0;
@@ -158,13 +145,15 @@ function NoteDisplay(props) {
 
 	return (
 		<>
+			<div>Wave Size: 256</div>
 			<div>Resolution: {best_res}</div>
 			<div>Frequency: {Math.round(best_freq)}</div>
-			<SineWave />
+			<SineWaveData />
 		</>
 
 	);
 }
+
 
 // oscillators generate addresses, not samples.
 // accumulator is 24-bit.
@@ -213,7 +202,9 @@ export class Application extends preact.Component {
 		this.setState( { freq: v } );
 	}
 
-	tabChange(v) {
+	tabChange(e) {
+		e.preventDefault();
+		var v = +e.target.value;
 		this.setState({ tab: v });
 	}
 
@@ -257,9 +248,6 @@ export class Application extends preact.Component {
 					<label>Oscillators</label> <Oscillators value={osc} onChange={this._oscChange} />
 				</div>
 				<div>
-					<label>Wave Size</label> <WaveSize value={wave} onChange={this._waveChange} />
-				</div>
-				<div>
 					<label>Note</label> <NoteInput value={note} onChange={this._noteChange} />
 				</div>
 
@@ -282,11 +270,15 @@ export class Application extends preact.Component {
 			case 1: children = this.noteChildren(); break;
 		}
 
+		var options = ["Sample", "Note"].map( (o, ix) => {
+			return <option key={ix} value={ix}>{o}</option>;
+		});
 
 		return (
-			<RadioGroup value={tab} options={["Sample", "Note"]} onClick={this._tabChange }>
-				{ children }
-			</RadioGroup>
+			<fieldset>
+				<legend><select value={tab} onChange={this._tabChange}>{options}</select></legend>
+				{children}
+			</fieldset>
 		);
 	}
 }

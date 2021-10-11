@@ -2,7 +2,6 @@
 
 const _notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-const _base = [ 27.5, 55, 110, 220, 440, 880, ]
 
 function split_value(value) {
 	return [ value % 12, (value / 12) >> 0 ];
@@ -69,7 +68,7 @@ export class NoteInput extends preact.Component {
 		});
 
 		var octaves = [];
-		for (var i = 0; i < 8; ++i) {
+		for (var i = 0; i < 9; ++i) {
 			octaves.push(
 				<option key={i} value={i}>{i}</option>
 			);

@@ -16,6 +16,11 @@ sub {
 	font-style: italic;
 }
 
+fieldset {
+	width:  30em;
+	margin-left: auto;
+	margin-right: auto;
+}
 legend a {
 	cursor: pointer;
 	display: inline-block;
@@ -26,4 +31,8 @@ legend a:last-of-type {
 }
 legend a.selected {
 	color: blue;
+}
+
+code {
+	line-height: initial;
 }

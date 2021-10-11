@@ -2,8 +2,9 @@
 
 all: js/application.js js/preact.min.js | js
 
-js/application.js : src/main.jsx src/application.jsx
-	esbuild --bundle --jsx-factory=preact.h --format=esm src/main.jsx --outfile=js/application.js 
+js/application.js : src/main.jsx src/application.jsx src/note_input.jsx src/radio_group.jsx
+	esbuild --bundle --jsx-factory=preact.h --jsx-fragment=preact.Fragment --format=esm \
+	src/main.jsx --outfile=js/application.js 
 
 
 js/preact.min.js : node_modules/preact/dist/preact.min.js

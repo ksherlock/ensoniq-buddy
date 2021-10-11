@@ -15,3 +15,15 @@ html {
 sub {
 	font-style: italic;
 }
+
+legend a {
+	cursor: pointer;
+	display: inline-block;
+	margin-left: .5em;
+}
+legend a:last-of-type {
+	margin-right: .5em;
+}
+legend a.selected {
+	color: blue;
+}

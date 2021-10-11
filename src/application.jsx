@@ -1,11 +1,14 @@
 
 // var h = preact.h;
 
+import { NoteInput, NoteFrequency } from './note_input';
+import { RadioGroup } from './radio_group';
 
 
 function calc_sr(osc) {
 	// iigs is ~7.14Mhz / 8.  Mirage is 8Mhz / 8
-	return (28.63636*1000*1000/32) / (osc + 2);
+	// return (28.63636*1000*1000/32) / (osc + 2);
+	return (28_636_360/32) / (osc + 2);
 }
 
 function calc_shift(res,ws) {
@@ -18,12 +21,22 @@ function log2(x) {
 }
 
 
+var _onames = [];
 function Oscillators(props) {
 
-	var options = []
-	for (var i = 1; i < 33; ++i) {
-		options.push(<option value={i} key={i}>{i}</option>);
+	if (!_onames.length) {
+		for (var i = 1; i < 33; ++i) {
+			var x  = (calc_sr(i) / 1000 ).toFixed(2) + " kHz";
+			_onames.push(x)
+		}
 	}
+	var options = _onames.map( (x, ix) => {
+		var i = ix + 1;
+		return <option value={i} key={i}>{i} – {x}</option>
+	});
+	// for (var i = 1; i < 33; ++i) {
+	// 	options.push(<option value={i} key={i}>{i}</option>);
+	// }
 	return <select value={props.value} onChange={props.onChange}>{options}</select>;
 }
 
@@ -105,7 +118,53 @@ function SampleDisplay(props) {
 	return rv;
 }
 
+function SineWave() {
 
+	var rv = [];
+	for (n = 0; n < 256; ++n) {
+		var x = 128 + Math.round(127 * Math.sin(n * Math.PI / 128));
+		var y = x.toString(16); if (y.length < 2) y = "0" + y;
+		rv.push( y );
+		if ((n & 0x07) == 0x07) rv.push("\n");
+		else rv.push(', ');
+	}
+
+	return (
+		<code>
+		<pre>
+		{rv}
+		</pre>
+		</code>
+	);
+}
+function NoteDisplay(props) {
+
+
+	var { osc, wave, note } = props;
+
+	const sr = calc_sr(osc);
+	const note_frq = NoteFrequency(note);
+
+	const f = note_frq / (sr / (1 << (8 + wave)));
+
+	var best_res = 0;
+	var best_freq = 0;
+	for (var res = 0; res < 8; ++res) {
+		var tmp = f * (1 << calc_shift(res, wave));
+		if (tmp >= 0x10000) break;
+		best_res = res;
+		best_freq = tmp;
+	}
+
+	return (
+		<>
+			<div>Resolution: {best_res}</div>
+			<div>Frequency: {Math.round(best_freq)}</div>
+			<SineWave />
+		</>
+
+	);
+}
 
 // oscillators generate addresses, not samples.
 // accumulator is 24-bit.
@@ -122,8 +181,10 @@ export class Application extends preact.Component {
 		this._waveChange = this.waveChange.bind(this);
 		this._resChange = this.resChange.bind(this);
 		this._freqChange = this.freqChange.bind(this);
+		this._noteChange = this.noteChange.bind(this);
+		this._tabChange = this.tabChange.bind(this);
 
-		this.state = { osc: 32, wave: 0, res: 0, freq: 512 };
+		this.state = { osc: 32, wave: 0, res: 0, freq: 512, tab: 0, note: 4*12 };
 	}
 
 	oscChange(e) {
@@ -152,12 +213,22 @@ export class Application extends preact.Component {
 		this.setState( { freq: v } );
 	}
 
-	form() {
+	tabChange(v) {
+		this.setState({ tab: v });
+	}
+
+	noteChange(v) {
+		this.setState({ note: v });
+	}
+
+	sampleChildren() {
 
 		var { osc, wave, res, freq } = this.state;
 
+		var shift = calc_shift(res, wave);
+
 		return (
-			<div id="form">
+			<>
 				<div>
 					<label>Oscillators</label> <Oscillators value={osc} onChange={this._oscChange} />
 				</div>
@@ -170,36 +241,53 @@ export class Application extends preact.Component {
 				<div>
 					<label>Frequency</label> <Frequency value={freq} onChange={this._freqChange} />
 				</div>
-			</div>
+
+				<SampleDisplay freq={freq} shift={shift} />
+			</>
 		);
 	}
 
-	render() {
+	noteChildren() {
 
-		var { osc, wave, res, freq } = this.state;
-
-		var shift = calc_shift(res, wave);
+		var { osc, wave, note } = this.state;
 
 		return (
-			<div>
-				{ this.form() }
-
+			<>
 				<div>
-					Scan Rate: { (calc_sr(osc) / 1000 ).toFixed(2) } kHz
+					<label>Oscillators</label> <Oscillators value={osc} onChange={this._oscChange} />
+				</div>
+				<div>
+					<label>Wave Size</label> <WaveSize value={wave} onChange={this._waveChange} />
+				</div>
+				<div>
+					<label>Note</label> <NoteInput value={note} onChange={this._noteChange} />
 				</div>
 
-				<SampleDisplay freq={freq} shift={shift} />
-			</div>
+				<NoteDisplay osc={osc} note={note} wave={wave} />
+			</>
+		);
+
+	}
+
+
+	render() {
+
+		var { osc, wave, res, freq, tab } = this.state;
+
+		// var shift = calc_shift(res, wave);
+
+		var children;
+		switch(tab){
+			case 0: children = this.sampleChildren(); break;
+			case 1: children = this.noteChildren(); break;
+		}
+
+
+		return (
+			<RadioGroup value={tab} options={["Sample", "Note"]} onClick={this._tabChange }>
+				{ children }
+			</RadioGroup>
 		);
 	}
 }
 
-/*
-window.addEventListener('load', function(){
-
-    preact.render(
-        <Application />,
-        document.getElementById('application')
-    );
-});
-*/

@@ -1,12 +1,17 @@
 
 
-
+function mod(a,b) {
+	return ((a % b) + b) % b;
+}
 
 function sine() {
 
+	const a = 127;
+	const p = 256;
+
 	var rv = [];
 	for (var n = 0; n < 256; ++n) {
-		var x = 128 + Math.round(127 * Math.sin(n * Math.PI / 128));
+		var x = 128 + Math.round(a * Math.sin(n * Math.PI / 128));
 		rv.push( x || 1 );
 	}
 	return rv;
@@ -24,9 +29,14 @@ function square() {
 function triangle() {
 	// 0x80 -> 0xff [25%] -> 0x80 [50%] -> 0x01 [75%] -> 0x80 [100%]
 	var rv = [];
-	for (var n = 0; n < 64; ++n) rv.push(0x80 + n * 2);
-	for (var n = 0; n < 128; ++n) rv.push(0xff - n * 2);
-	for (var n = 0; n < 64; ++n) rv.push(0x01 + n * 2);
+
+	const a = 127;
+	const p = 256;
+	for (var n = 0; n < 256; ++n) {
+		var x = 128 + Math.round(4*a/p * Math.abs(mod(n-p/4, p) - p/2)) - a;
+		rv.push(x || 1);
+
+	}
 	return rv;
 }
 
@@ -34,8 +44,13 @@ function triangle() {
 function sawtooth() {
 
 	var rv = [];
-	for (var n = 0; n < 128; ++n) rv.push(0x80 + n);
-	for (var n = 0; n < 128; ++n) rv.push(0x01 + n);
+
+	const a = 127;
+	const p = 256;
+	for (var n = 0; n < 256; ++n) {
+		var x = 128 + Math.round(a * 2 * (n/p  - Math.floor(.5 + n/p)));
+		rv.push(x || 1);
+	}
 	return rv;
 }
 

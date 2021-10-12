@@ -72,6 +72,14 @@ export function WaveData(props) {
 		}
 	}
 
+	if (assembler == 2) {
+		// mpw
+		for (var n = 0; n < 32; ++n) {
+			var line = "    dc.b $" + hex.slice(n * 8, n * 8 + 8).join(",$") + "\n"
+			code.push(line);
+		}
+	}
+
 	return (
 		<code>
 		<pre>

@@ -70,7 +70,7 @@ function Frequency(props) {
 
 function Assembler(props) {
 
-	var options = ["Merlin", "ORCA/M"].map( (o, ix) => {
+	var options = ["Merlin", "ORCA/M", "MPW"].map( (o, ix) => {
 		return <option key={ix} value={ix}>{o}</option>;
 	});
 

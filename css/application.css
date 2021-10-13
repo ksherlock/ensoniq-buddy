@@ -1,15 +1,12 @@
 html {
 	line-height: 4ex;
 }
-#form div {
-	line-height: 4ex;
-}
 
-#form label {
+fieldset label {
 	display: inline-block;
 	width: 6em;
 }
-#form label:after {
+fieldset label:after {
 	content:  ": ";
 }
 sub {

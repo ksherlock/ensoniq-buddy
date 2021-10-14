@@ -1,90 +1,15 @@
 
 // var h = preact.h;
 
+import { calc_sr, calc_shift, log2 } from './utils';
+
 import { NoteInput, NoteFrequency } from './note_input';
 import { RadioGroup } from './radio_group';
 import { WaveData } from './wave_data';
 
-function calc_sr(osc) {
-	// iigs is ~7.14Mhz / 8.  Mirage is 8Mhz / 8
-	// return (28.63636*1000*1000/32) / (osc + 2);
-	return (28_636_360/32) / (osc + 2);
-}
-
-function calc_shift(res,ws) {
-	return res + 9 - ws;
-}
-
-function log2(x) {
-	var y = Math.log2(x);
-	return (y >> 0) === y ? y : false;
-}
+import { Oscillators, WaveSize, Resolution, Frequency, Assembler, WaveShape } from './input';
 
 
-var _onames = [];
-function Oscillators(props) {
-
-	if (!_onames.length) {
-		for (var i = 1; i < 33; ++i) {
-			var x  = (calc_sr(i) / 1000 ).toFixed(2) + " kHz";
-			_onames.push(x)
-		}
-	}
-	var options = _onames.map( (x, ix) => {
-		var i = ix + 1;
-		return <option value={i} key={i}>{i} – {x}</option>
-	});
-	// for (var i = 1; i < 33; ++i) {
-	// 	options.push(<option value={i} key={i}>{i}</option>);
-	// }
-	return <select value={props.value} onChange={props.onChange}>{options}</select>;
-}
-
-function WaveSize(props) {
-
-	var options = []
-	for (var i = 8; i < 16; ++i) {
-		var ext = 1 << i;
-		var int = i - 8;
-		options.push(<option value={int} key={int}>{ext}</option>);
-	}
-	return <select value={props.value} onChange={props.onChange}>{options}</select>;
-}
-
-function Resolution(props) {
-
-	var options = []
-	for (var i = 0; i < 8; ++i) {
-		options.push(<option value={i} key={i}>{i}</option>);
-	}
-	return <select value={props.value} onChange={props.onChange}>{options}</select>;
-}
-
-function Frequency(props) {
-
-	/* number, min, max are not as strict as they ought to be */
-	return <input type="number" min="0" max="65535" value={props.value} onChange={props.onChange} />;
-}
-
-
-
-function Assembler(props) {
-
-	var options = ["Merlin", "ORCA/M", "MPW"].map( (o, ix) => {
-		return <option key={ix} value={ix}>{o}</option>;
-	});
-
-	return <select {...props}>{options}</select>;
-}
-
-function WaveShape(props) {
-
-	var options = ["Sine", "Square", "Triangle", "Sawtooth"].map( (o, ix) => {
-		return <option key={ix} value={ix}>{o}</option>;
-	});
-
-	return <select {...props}>{options}</select>;	
-}
 
 
 function nmultiply(x) {

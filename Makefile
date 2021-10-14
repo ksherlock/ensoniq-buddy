@@ -2,7 +2,9 @@
 
 all: js/application.js js/preact.min.js | js
 
-js/application.js : src/main.jsx src/application.jsx src/note_input.jsx src/wave_data.jsx
+SRC = src/main.jsx src/application.jsx src/note_input.jsx src/wave_data.jsx src/utils.js src/input.jsx
+
+js/application.js : $(SRC)
 	esbuild --bundle --jsx-factory=preact.h --jsx-fragment=preact.Fragment --format=esm \
 	src/main.jsx --outfile=js/application.js 
 

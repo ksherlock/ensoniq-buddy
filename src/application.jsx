@@ -18,6 +18,15 @@ function nmultiply(x) {
 	return <>{x} * <i>n</i></>;
 	// return paren ? <span>({x} * <i>n</i>)</span> : <span>{x} * <i>n</i></span>;
 }
+
+function simplify(res, freq) {
+	while (res && !(freq & 0x01)) {
+		freq >>= 1;
+		--res;
+	}
+	return [res, freq];
+}
+
 function SampleDisplay(props) {
 
 	var { shift, freq } = props;
@@ -82,19 +91,52 @@ function NoteDisplay(props) {
 	var best_res = 0;
 	var best_freq = 0;
 	for (var res = 0; res < 8; ++res) {
-		var tmp = f * (1 << calc_shift(res, wave));
+		var tmp = Math.round(f * (1 << calc_shift(res, wave)));
 		if (tmp >= 0x10000) break;
 		best_res = res;
 		best_freq = tmp;
 	}
 
+	[best_res, best_freq] = simplify(best_res, best_freq);
+
 	return (
 		<>
 			<div>Wave Size: 256</div>
 			<div>Resolution: {best_res}</div>
-			<div>Frequency: {Math.round(best_freq)}</div>
+			<div>Frequency: {best_freq}</div>
 		</>
 
+	);
+}
+
+function ResampleDisplay(props) {
+
+	var { osc, size, freq } = props;
+	const sr = calc_sr(osc);
+
+	const f = freq / sr;
+
+	var best_res = 0;
+	var best_freq = 0;
+
+	for (var res = 0; res < 8; ++res) {
+		var tmp = Math.round(f * (1 << calc_shift(res, size)));
+		if (tmp >= 0x10000) break;
+		best_res = res;
+		best_freq = tmp;		
+	}
+
+	[best_res, best_freq] = simplify(best_res, best_freq);
+
+	var best_shift = calc_shift(best_res, size);
+
+
+	return (
+		<>
+			<div>Resolution: {best_res}</div>
+			<div>Frequency: {best_freq}</div>
+			<SampleDisplay freq={best_freq} shift={best_shift} />
+		</>
 	);
 }
 
@@ -118,8 +160,14 @@ export class Application extends preact.Component {
 		this._tabChange = this.tabChange.bind(this);
 		this._asmChange = this.asmChange.bind(this);
 		this._shapeChange = this.shapeChange.bind(this);
+		this._inFreqChange = this.inFreqChange.bind(this);
+		this._inSizeChange = this.inSizeChange.bind(this);
 
-		this.state = { osc: 32, wave: 0, res: 0, freq: 512, tab: 0, note: 4*12, assembler: 0, shape: 0 };
+		this.state = {
+			osc: 32, wave: 0, res: 0, freq: 512, tab: 0, 
+			note: 4*12, assembler: 0, shape: 0,
+			in_freq: 44100, in_size: 0,
+		};
 	}
 
 	oscChange(e) {
@@ -147,6 +195,22 @@ export class Application extends preact.Component {
 		if (v > 65535) v = 65535;
 		this.setState( { freq: v } );
 	}
+
+
+	inFreqChange(e) {
+		e.preventDefault();
+		var v = +e.target.value >> 0;
+		if (v < 0) v = 0;
+		if (v > 65535) v = 65535;
+		this.setState( { in_freq: v } );
+	}
+
+	inSizeChange(e) {
+		e.preventDefault();
+		var v = +e.target.value || 0;
+		this.setState( { in_size: v } );
+	}
+
 
 	tabChange(e) {
 		e.preventDefault();
@@ -233,6 +297,30 @@ export class Application extends preact.Component {
 		);
 	}
 
+	resampleChildren() {
+
+		var { osc, in_freq, in_size } = this.state;
+
+		// freq not limited to 65,535 ?
+		return (
+			<>
+				<div>
+					<label>Oscillators</label> <Oscillators value={osc} onChange={this._oscChange} />
+				</div>
+
+				<div>
+					<label>In Frequency</label> <Frequency value={in_freq} onChange={this._inFreqChange} />
+				</div>
+
+				<div>
+					<label>In Size</label> <WaveSize value={in_size} onChange={this._inSizeChange} />
+				</div>
+
+				<ResampleDisplay osc={osc} size={in_size} freq={in_freq} />
+			</>
+		);
+	}
+
 
 	render() {
 
@@ -243,11 +331,12 @@ export class Application extends preact.Component {
 		var children;
 		switch(tab){
 			case 0: children = this.sampleChildren(); break;
-			case 1: children = this.noteChildren(); break;
-			case 2: children = this.waveChildren(); break;
+			case 1: children = this.resampleChildren(); break;
+			case 2: children = this.noteChildren(); break;
+			case 3: children = this.waveChildren(); break;
 		}
 
-		var options = ["Sample", "Note", "Wave"].map( (o, ix) => {
+		var options = ["Sample", "Resample", "Note", "Wave"].map( (o, ix) => {
 			return <option key={ix} value={ix}>{o}</option>;
 		});
 

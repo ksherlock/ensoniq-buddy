@@ -17,7 +17,7 @@ export function Oscillators(props) {
 	// for (var i = 1; i < 33; ++i) {
 	// 	options.push(<option value={i} key={i}>{i}</option>);
 	// }
-	return <select value={props.value} onChange={props.onChange}>{options}</select>;
+	return <select {...props}>{options}</select>;
 }
 
 export function WaveSize(props) {
@@ -64,4 +64,8 @@ export function WaveShape(props) {
 	});
 
 	return <select {...props}>{options}</select>;	
+}
+
+export function CheckBox(props) {
+	return <input type="checkbox" {...props} />
 }

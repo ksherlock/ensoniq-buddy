@@ -49,7 +49,7 @@ var NoteInput = class extends preact.Component {
     }
   }
   render() {
-    var { onChange, value } = this.props;
+    var { onChange, value, disabled } = this.props;
     var notes = _notes.map((x, ix) => {
       return /* @__PURE__ */ preact.h("option", {
         key: ix,
@@ -66,10 +66,12 @@ var NoteInput = class extends preact.Component {
     var [note, octave] = split_value(value);
     return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("select", {
       onChange: this._noteChange,
-      value: note
+      value: note,
+      disabled
     }, notes), " ", /* @__PURE__ */ preact.h("select", {
       onChange: this._octaveChange,
-      value: octave
+      value: octave,
+      disabled
     }, octaves), " ", NoteFrequency(value).toFixed(2), " Hz");
   }
 };
@@ -173,8 +175,7 @@ function Oscillators(props) {
     }, i2, " \u2013 ", x2);
   });
   return /* @__PURE__ */ preact.h("select", {
-    value: props.value,
-    onChange: props.onChange
+    ...props
   }, options);
 }
 function WaveSize(props) {
@@ -236,8 +237,15 @@ function WaveShape(props) {
     ...props
   }, options);
 }
+function CheckBox(props) {
+  return /* @__PURE__ */ preact.h("input", {
+    type: "checkbox",
+    ...props
+  });
+}
 
 // src/application.jsx
+var C4 = 4 * 12;
 function nmultiply(x) {
   if (x == 0)
     return 0;
@@ -309,6 +317,13 @@ function ResampleDisplay(props) {
     shift: best_shift
   }));
 }
+function HyperDisplay(props) {
+  var { pitch, freq } = props;
+  const r = freq * 261.63 / (26320 * pitch);
+  const offset = Math.round(3072 * Math.log2(r));
+  const relative = offset < 0 ? -offset + 32768 : offset;
+  return /* @__PURE__ */ preact.h("div", null, "Relative: ", relative);
+}
 var Application = class extends preact.Component {
   constructor(props) {
     super(props);
@@ -322,17 +337,19 @@ var Application = class extends preact.Component {
     this._shapeChange = this.shapeChange.bind(this);
     this._inFreqChange = this.inFreqChange.bind(this);
     this._inSizeChange = this.inSizeChange.bind(this);
+    this._indeterminateChange = this.indeterminateChange.bind(this);
     this.state = {
       osc: 32,
       wave: 0,
       res: 0,
       freq: 512,
       tab: 0,
-      note: 4 * 12,
+      note: C4,
       assembler: 0,
       shape: 0,
       in_freq: 44100,
-      in_size: 0
+      in_size: 0,
+      indeterminate: false
     };
   }
   oscChange(e) {
@@ -390,6 +407,11 @@ var Application = class extends preact.Component {
     e.preventDefault();
     var v = +e.target.value;
     this.setState({ shape: v });
+  }
+  indeterminateChange(e) {
+    e.preventDefault();
+    var v = !!e.target.checked;
+    this.setState({ indeterminate: v });
   }
   sampleChildren() {
     var { osc, wave, res, freq } = this.state;
@@ -455,6 +477,30 @@ var Application = class extends preact.Component {
       freq: in_freq
     }));
   }
+  hyperChildren() {
+    var { in_freq, note, indeterminate } = this.state;
+    if (indeterminate)
+      note = C4;
+    return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Oscillators"), " ", /* @__PURE__ */ preact.h(Oscillators, {
+      value: 32,
+      disabled: true
+    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "In Frequency"), " ", /* @__PURE__ */ preact.h(Frequency, {
+      value: in_freq,
+      onChange: this._inFreqChange
+    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Indeterminate"), /* @__PURE__ */ preact.h(CheckBox, {
+      checked: indeterminate,
+      onChange: this._indeterminateChange
+    })), /* @__PURE__ */ preact.h("div", {
+      style: indeterminate ? { display: "none" } : ""
+    }, /* @__PURE__ */ preact.h("label", null, "Pitch"), " ", /* @__PURE__ */ preact.h(NoteInput, {
+      value: note,
+      onChange: this._noteChange,
+      disabled: indeterminate
+    })), /* @__PURE__ */ preact.h(HyperDisplay, {
+      freq: in_freq,
+      pitch: NoteFrequency(note)
+    }));
+  }
   render() {
     var { osc, wave, res, freq, tab } = this.state;
     var children;
@@ -471,8 +517,11 @@ var Application = class extends preact.Component {
       case 3:
         children = this.waveChildren();
         break;
+      case 4:
+        children = this.hyperChildren();
+        break;
     }
-    var options = ["Sample", "Resample", "Note", "Wave"].map((o, ix) => {
+    var options = ["Sample", "Resample", "Note", "Wave", "HyperCard Pitch"].map((o, ix) => {
       return /* @__PURE__ */ preact.h("option", {
         key: ix,
         value: ix

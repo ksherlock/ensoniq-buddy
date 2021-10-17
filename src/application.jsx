@@ -4,12 +4,12 @@
 import { calc_sr, calc_shift, log2 } from './utils';
 
 import { NoteInput, NoteFrequency } from './note_input';
-import { RadioGroup } from './radio_group';
 import { WaveData } from './wave_data';
 
-import { Oscillators, WaveSize, Resolution, Frequency, Assembler, WaveShape } from './input';
+import { Oscillators, WaveSize, Resolution, Frequency, Assembler, WaveShape, CheckBox } from './input';
 
 
+const C4 = 4*12;
 
 
 function nmultiply(x) {
@@ -141,6 +141,25 @@ function ResampleDisplay(props) {
 }
 
 
+function HyperDisplay(props) {
+
+	var { pitch, freq } = props;
+
+	// 26_320 = SR w/ 32 oscillators.
+	// 261.63 = C4
+	// 3072 = 12 * 256 (12 = octave)
+
+	const r = (freq * 261.63 )/ (26_320 * pitch);
+
+	const offset = Math.round(3072 * Math.log2(r));
+
+	const relative = offset < 0 ? -offset + 0x8000 : offset;
+
+	return (
+		<div>Relative: {relative}</div>
+	);
+}
+
 // oscillators generate addresses, not samples.
 // accumulator is 24-bit.
 // frequency is 16-bit.
@@ -162,11 +181,13 @@ export class Application extends preact.Component {
 		this._shapeChange = this.shapeChange.bind(this);
 		this._inFreqChange = this.inFreqChange.bind(this);
 		this._inSizeChange = this.inSizeChange.bind(this);
+		this._indeterminateChange = this.indeterminateChange.bind(this);
 
 		this.state = {
 			osc: 32, wave: 0, res: 0, freq: 512, tab: 0, 
-			note: 4*12, assembler: 0, shape: 0,
+			note: C4, assembler: 0, shape: 0,
 			in_freq: 44100, in_size: 0,
+			indeterminate: false,
 		};
 	}
 
@@ -232,6 +253,12 @@ export class Application extends preact.Component {
 		e.preventDefault();
 		var v = +e.target.value;
 		this.setState({ shape: v});
+	}
+
+	indeterminateChange(e) {
+		e.preventDefault();
+		var v = !!e.target.checked;
+		this.setState({ indeterminate: v });
 	}
 
 	sampleChildren() {
@@ -321,6 +348,41 @@ export class Application extends preact.Component {
 		);
 	}
 
+	hyperChildren() {
+
+		var { in_freq, note, indeterminate } = this.state;
+
+
+		if (indeterminate) note = C4;
+		return (
+			<>
+
+				<div>
+					<label>Oscillators</label> <Oscillators value={32} disabled={true} />
+				</div>
+
+				<div>
+					<label>In Frequency</label> <Frequency value={in_freq} onChange={this._inFreqChange} />
+				</div>
+
+				<div>
+					<label>Indeterminate</label>
+					<CheckBox checked={indeterminate} onChange={ this._indeterminateChange } />
+				</div>
+
+				<div style={indeterminate ? { display: "none" } : ""}>
+					<label>Pitch</label> <NoteInput value={note} onChange={this._noteChange}
+						disabled={indeterminate} />
+				</div>	
+
+
+				<HyperDisplay freq={in_freq} pitch={NoteFrequency(note)} />
+
+			</>
+		);
+
+	}
+
 
 	render() {
 
@@ -334,9 +396,10 @@ export class Application extends preact.Component {
 			case 1: children = this.resampleChildren(); break;
 			case 2: children = this.noteChildren(); break;
 			case 3: children = this.waveChildren(); break;
+			case 4: children = this.hyperChildren(); break;
 		}
 
-		var options = ["Sample", "Resample", "Note", "Wave"].map( (o, ix) => {
+		var options = ["Sample", "Resample", "Note", "Wave", "HyperCard Pitch"].map( (o, ix) => {
 			return <option key={ix} value={ix}>{o}</option>;
 		});
 

@@ -61,7 +61,7 @@ export class NoteInput extends preact.Component {
 
 	render() {
 
-		var { onChange, value } = this.props;
+		var { onChange, value, disabled } = this.props;
 
 		var notes = _notes.map( (x, ix) => {
 			return <option key={ix} value={ix}>{x}</option>;
@@ -78,9 +78,9 @@ export class NoteInput extends preact.Component {
 
 		return (
 			<>
-				<select onChange={this._noteChange} value={note}>{notes}</select>
+				<select onChange={this._noteChange} value={note} disabled={disabled}>{notes}</select>
 				{ ' ' }
-				<select onChange={this._octaveChange} value={octave}>{octaves}</select>
+				<select onChange={this._octaveChange} value={octave} disabled={disabled}>{octaves}</select>
 				{ ' ' }
 				{ NoteFrequency(value).toFixed(2) } Hz
 		</>);

@@ -14,7 +14,10 @@ jobs:
     - uses: actions/checkout@v2
           
     - name: Install dependencies
-      run: brew update && brew install esbuild
+      run: brew update && brew install esbuild yarn
+      
+    - name: Yarn
+      run: yarn install
       
     - name: Clean
       run: make clean

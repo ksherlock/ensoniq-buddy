@@ -1,11 +1,14 @@
 name: Makefile CI
 
+# ubuntu apt doesn't have esbuild until 21.04
+# (as of 2021-10-17, ubuntu-latest is 20.04)
+
 on: [push, pull_request]
 
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v2

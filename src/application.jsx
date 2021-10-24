@@ -8,6 +8,7 @@ import { WaveData } from './wave_data';
 
 import { Oscillators, WaveSize, Resolution, Frequency, Assembler, WaveShape, CheckBox } from './input';
 
+import { DurationInput, DurationToSeconds } from './duration_input';
 
 const C4 = 4*12;
 
@@ -149,6 +150,8 @@ function HyperDisplay(props) {
 	// 261.63 = C4
 	// 3072 = 12 * 256 (12 = octave)
 
+	// "The high byte of this word is a semitone value; the low byte is a fractional semitone."
+
 	const r = (freq * 261.63 )/ (26_320 * pitch);
 
 	const offset = Math.round(3072 * Math.log2(r));
@@ -159,6 +162,47 @@ function HyperDisplay(props) {
 		<div>Relative: {relative}</div>
 	);
 }
+
+
+function TimerDisplay(props) {
+	var {osc, time } = props;
+
+	const sr = calc_sr(osc);
+
+	const cycles = time * sr;
+
+
+	// (f * 256) / shift = cycles
+	// f * 256 = cycles * shift
+	// f = (cycles  * shift) / 256
+
+	// should calculate min. wave size.  eg, 256k sample has min. shift / 512, 32768 has min shift of / 2
+
+	const size = 0; // 256
+
+	var best_res = 0;
+	var best_freq = 0;
+	for (var res = 0; res < 8; ++res) {
+		var shift = 1 << calc_shift(res, size);
+		var f = Math.round(cycles * shift / 256);
+		if (f >= 0x10000) break;
+		best_res = res;
+		best_freq = f;
+	}
+
+	[best_res, best_freq] = simplify(best_res, best_freq);
+	var best_shift = calc_shift(best_res, size);
+
+	return (
+		<>
+			<div>Resolution: {best_res ? best_res : "N/A"}</div>
+			<div>Frequency: {best_freq ? best_freq : "N/A"}</div>
+			<SampleDisplay freq={best_freq} shift={best_shift} />
+		</>
+	);
+
+}
+
 
 // oscillators generate addresses, not samples.
 // accumulator is 24-bit.
@@ -176,6 +220,7 @@ export class Application extends preact.Component {
 		this._resChange = this.resChange.bind(this);
 		this._freqChange = this.freqChange.bind(this);
 		this._noteChange = this.noteChange.bind(this);
+		this._durationChange = this.durationChange.bind(this);
 		this._tabChange = this.tabChange.bind(this);
 		this._asmChange = this.asmChange.bind(this);
 		this._shapeChange = this.shapeChange.bind(this);
@@ -243,6 +288,10 @@ export class Application extends preact.Component {
 		this.setState({ note: v });
 	}
 
+	durationChange(v) {
+		this.setState({ duration: v });
+	}
+
 	asmChange(e) {
 		e.preventDefault();
 		var v = +e.target.value;
@@ -260,6 +309,8 @@ export class Application extends preact.Component {
 		var v = !!e.target.checked;
 		this.setState({ indeterminate: v });
 	}
+
+
 
 	sampleChildren() {
 
@@ -348,6 +399,24 @@ export class Application extends preact.Component {
 		);
 	}
 
+	timerChildren() {
+		var { osc, duration } = this.state;
+
+		return (
+			<>
+				<div>
+					<label>Oscillators</label> <Oscillators value={osc} onChange={this._oscChange} />
+				</div>
+
+				<div>
+					<label>Duration</label> <DurationInput value={duration} onChange={this._durationChange} />
+				</div>
+
+				<TimerDisplay osc={osc} time={DurationToSeconds(duration)} />
+			</>
+		);
+	}
+
 	hyperChildren() {
 
 		var { in_freq, note, indeterminate } = this.state;
@@ -396,10 +465,11 @@ export class Application extends preact.Component {
 			case 1: children = this.resampleChildren(); break;
 			case 2: children = this.noteChildren(); break;
 			case 3: children = this.waveChildren(); break;
-			case 4: children = this.hyperChildren(); break;
+			case 4: children = this.timerChildren(); break;
+			case 5: children = this.hyperChildren(); break;
 		}
 
-		var options = ["Sample", "Resample", "Note", "Wave", "HyperCard Pitch"].map( (o, ix) => {
+		var options = ["Sample", "Resample", "Note", "Wave", "Timer", "HyperCard Pitch",].map( (o, ix) => {
 			return <option key={ix} value={ix}>{o}</option>;
 		});
 

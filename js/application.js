@@ -244,6 +244,100 @@ function CheckBox(props) {
   });
 }
 
+// src/duration_input.jsx
+function split_value2(x) {
+  if (x === void 0 || x === null)
+    return ["", 0];
+  if (typeof x == "number")
+    return [x, 0];
+  var xx = x.split(":");
+  if (xx.length == 2)
+    return xx;
+  if (xx.length == 1)
+    return [x, 0];
+  return ["", 0];
+}
+function DurationToSeconds(x) {
+  let [time, unit] = split_value2(x);
+  switch (+unit) {
+    case 0:
+      return +time;
+    case 1:
+      return +time / 1e3;
+    case 2:
+      return +time / 60;
+    default:
+      return 0;
+  }
+}
+var DurationInput = class extends preact.Component {
+  constructor(props) {
+    super(props);
+    this._amtChange = this.amtChange.bind(this);
+    this._unitChange = this.unitChange.bind(this);
+  }
+  amtChange(e) {
+    e.preventDefault();
+    let { value } = this.props;
+    var [time, unit] = split_value2(value);
+    var new_time = e.target.value.replace(/^\s+|\s+$/g, "");
+    var n = Number(new_time);
+    if (Number.isNaN(n)) {
+      e.target.value = time;
+      return;
+    }
+    this.change(new_time, unit);
+  }
+  unitChange(e) {
+    e.preventDefault();
+    let { value } = this.props;
+    var [time, unit] = split_value2(value);
+    var new_unit = +e.target.value;
+    let s = DurationToSeconds(value);
+    if (new_unit == unit)
+      return;
+    var new_time = 0;
+    switch (new_unit) {
+      case 0:
+        new_time = s;
+        break;
+      case 1:
+        new_time = s * 1e3;
+        break;
+      case 2:
+        new_time = s * 60;
+        break;
+    }
+    this.change(new_time, new_unit);
+  }
+  change(time, unit) {
+    let { onChange } = this.props;
+    if (onChange) {
+      onChange(time + ":" + unit);
+    }
+  }
+  render() {
+    var { value, disabled } = this.props;
+    var [amt, unit] = split_value2(value);
+    var options = ["Seconds", "Milliseconds", "Ticks"].map((x, ix) => {
+      return /* @__PURE__ */ preact.h("option", {
+        key: ix,
+        value: ix
+      }, x);
+    });
+    return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("input", {
+      type: "text",
+      value: amt,
+      disabled,
+      onChange: this._amtChange
+    }), " ", /* @__PURE__ */ preact.h("select", {
+      value: unit,
+      disabled,
+      onChange: this._unitChange
+    }, options));
+  }
+};
+
 // src/application.jsx
 var C4 = 4 * 12;
 function nmultiply(x) {
@@ -324,6 +418,28 @@ function HyperDisplay(props) {
   const relative = offset < 0 ? -offset + 32768 : offset;
   return /* @__PURE__ */ preact.h("div", null, "Relative: ", relative);
 }
+function TimerDisplay(props) {
+  var { osc, time } = props;
+  const sr = calc_sr(osc);
+  const cycles = time * sr;
+  const size = 0;
+  var best_res = 0;
+  var best_freq = 0;
+  for (var res = 0; res < 8; ++res) {
+    var shift = 1 << calc_shift(res, size);
+    var f = Math.round(cycles * shift / 256);
+    if (f >= 65536)
+      break;
+    best_res = res;
+    best_freq = f;
+  }
+  [best_res, best_freq] = simplify(best_res, best_freq);
+  var best_shift = calc_shift(best_res, size);
+  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res ? best_res : "N/A"), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq ? best_freq : "N/A"), /* @__PURE__ */ preact.h(SampleDisplay, {
+    freq: best_freq,
+    shift: best_shift
+  }));
+}
 var Application = class extends preact.Component {
   constructor(props) {
     super(props);
@@ -332,6 +448,7 @@ var Application = class extends preact.Component {
     this._resChange = this.resChange.bind(this);
     this._freqChange = this.freqChange.bind(this);
     this._noteChange = this.noteChange.bind(this);
+    this._durationChange = this.durationChange.bind(this);
     this._tabChange = this.tabChange.bind(this);
     this._asmChange = this.asmChange.bind(this);
     this._shapeChange = this.shapeChange.bind(this);
@@ -397,6 +514,9 @@ var Application = class extends preact.Component {
   }
   noteChange(v) {
     this.setState({ note: v });
+  }
+  durationChange(v) {
+    this.setState({ duration: v });
   }
   asmChange(e) {
     e.preventDefault();
@@ -477,6 +597,19 @@ var Application = class extends preact.Component {
       freq: in_freq
     }));
   }
+  timerChildren() {
+    var { osc, duration } = this.state;
+    return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Oscillators"), " ", /* @__PURE__ */ preact.h(Oscillators, {
+      value: osc,
+      onChange: this._oscChange
+    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Duration"), " ", /* @__PURE__ */ preact.h(DurationInput, {
+      value: duration,
+      onChange: this._durationChange
+    })), /* @__PURE__ */ preact.h(TimerDisplay, {
+      osc,
+      time: DurationToSeconds(duration)
+    }));
+  }
   hyperChildren() {
     var { in_freq, note, indeterminate } = this.state;
     if (indeterminate)
@@ -518,10 +651,13 @@ var Application = class extends preact.Component {
         children = this.waveChildren();
         break;
       case 4:
+        children = this.timerChildren();
+        break;
+      case 5:
         children = this.hyperChildren();
         break;
     }
-    var options = ["Sample", "Resample", "Note", "Wave", "HyperCard Pitch"].map((o, ix) => {
+    var options = ["Sample", "Resample", "Note", "Wave", "Timer", "HyperCard Pitch"].map((o, ix) => {
       return /* @__PURE__ */ preact.h("option", {
         key: ix,
         value: ix

@@ -2,7 +2,8 @@
 
 all: js/application.js js/preact.min.js | js
 
-SRC = src/main.jsx src/application.jsx src/note_input.jsx src/wave_data.jsx src/utils.js src/input.jsx
+SRC = src/main.jsx src/application.jsx src/note_input.jsx src/wave_data.jsx src/utils.js \
+	src/input.jsx src/duration_input.jsx
 
 js/application.js : $(SRC)
 	esbuild --bundle --jsx-factory=preact.h --jsx-fragment=preact.Fragment --format=esm \

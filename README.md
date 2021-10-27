@@ -8,7 +8,7 @@ Developed with [preact](https://github.com/preactjs/preact) and [esbuild](https:
 
 ## Building
 
-1. Install esbuild (and it's dependencies...)
+1. Install esbuild (and dependencies...)
 2. Install yarn
 3. `yarn install`
 2. `make`

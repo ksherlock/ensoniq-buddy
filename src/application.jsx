@@ -41,7 +41,7 @@ function SampleDisplay(props) {
 
 	rv.push(
 		<div>
-			Sample<sub>n</sub> = RAM[ ({fspan} * <i>n</i>) >> {shift} ]
+			Sample<sub>n</sub> = RAM[ ({fspan} * <i>n</i>) &gt;&gt; {shift} ]
 		</div>
 	);
 	rv.push(
@@ -60,7 +60,7 @@ function SampleDisplay(props) {
 		} else {
 			rv.push(
 				<div>
-					Sample<sub>n</sub> = RAM[ { nmultiply(freq >> freq2) } >> {shift - freq2} ]
+					Sample<sub>n</sub> = RAM[ { nmultiply(freq >> freq2) } &gt;&gt; {shift - freq2} ]
 				</div>
 			);
 			rv.push(

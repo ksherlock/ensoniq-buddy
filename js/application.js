@@ -58,10 +58,12 @@ var NoteInput = class extends preact.Component {
     });
     var octaves = [];
     for (var i = 0; i < 9; ++i) {
-      octaves.push(/* @__PURE__ */ preact.h("option", {
-        key: i,
-        value: i
-      }, i));
+      octaves.push(
+        /* @__PURE__ */ preact.h("option", {
+          key: i,
+          value: i
+        }, i)
+      );
     }
     var [note, octave] = split_value(value);
     return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("select", {
@@ -361,14 +363,24 @@ function SampleDisplay(props) {
     title: "Frequency"
   }, freq);
   var rv = [];
-  rv.push(/* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ (", fspan, " * ", /* @__PURE__ */ preact.h("i", null, "n"), ") >> ", shift, " ]"));
-  rv.push(/* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ (", fspan, " * ", /* @__PURE__ */ preact.h("i", null, "n"), ") / ", 1 << shift, " ]"));
+  rv.push(
+    /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ (", fspan, " * ", /* @__PURE__ */ preact.h("i", null, "n"), ") >> ", shift, " ]")
+  );
+  rv.push(
+    /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ (", fspan, " * ", /* @__PURE__ */ preact.h("i", null, "n"), ") / ", 1 << shift, " ]")
+  );
   if (freq2) {
     if (freq2 >= shift) {
-      rv.push(/* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", nmultiply(freq / (1 << shift)), " ]"));
+      rv.push(
+        /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", nmultiply(freq / (1 << shift)), " ]")
+      );
     } else {
-      rv.push(/* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", nmultiply(freq >> freq2), " >> ", shift - freq2, " ]"));
-      rv.push(/* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", nmultiply(freq >> freq2), " / ", 1 << shift - freq2, " ]"));
+      rv.push(
+        /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", nmultiply(freq >> freq2), " >> ", shift - freq2, " ]")
+      );
+      rv.push(
+        /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", nmultiply(freq >> freq2), " / ", 1 << shift - freq2, " ]")
+      );
     }
   }
   return rv;
@@ -672,5 +684,8 @@ var Application = class extends preact.Component {
 
 // src/main.jsx
 window.addEventListener("load", function() {
-  preact.render(/* @__PURE__ */ preact.h(Application, null), document.getElementById("application"));
+  preact.render(
+    /* @__PURE__ */ preact.h(Application, null),
+    document.getElementById("application")
+  );
 });

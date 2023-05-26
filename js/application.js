@@ -437,11 +437,13 @@ function TimerDisplay(props) {
   const size = 0;
   var best_res = 0;
   var best_freq = 0;
+  best = [];
   for (var res = 0; res < 8; ++res) {
     var shift = 1 << calc_shift(res, size);
-    var f = Math.round(cycles * shift / 256);
+    var f = Math.round(shift * 256 / cycles);
     if (f >= 65536)
-      break;
+      continue;
+    var actual = Math.ceil(256 * shift / f);
     best_res = res;
     best_freq = f;
   }

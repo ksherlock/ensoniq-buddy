@@ -182,10 +182,15 @@ function TimerDisplay(props) {
 
 	var best_res = 0;
 	var best_freq = 0;
+
+	best = []
 	for (var res = 0; res < 8; ++res) {
 		var shift = 1 << calc_shift(res, size);
-		var f = Math.round(cycles * shift / 256);
-		if (f >= 0x10000) break;
+		var f = Math.round(shift * 256 / cycles);
+		if (f >= 0x10000) continue; // break;
+
+		var actual = Math.ceil(256 * shift / f);
+
 		best_res = res;
 		best_freq = f;
 	}

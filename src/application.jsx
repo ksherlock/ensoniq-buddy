@@ -8,7 +8,7 @@ import { WaveData } from './wave_data';
 
 import { Oscillators, WaveSize, Resolution, Frequency, Assembler, WaveShape, CheckBox } from './input';
 
-import { DurationInput, DurationToSeconds } from './duration_input';
+import { DurationInput, DurationSplit } from './duration_input';
 
 const C4 = 4*12;
 
@@ -32,21 +32,24 @@ function SampleDisplay(props) {
 
 	var { shift, freq } = props;
 
+	if (freq == 0) return [];
 
 	var freq2 = log2(freq);
 
 	var fspan = <span title="Frequency">{freq}</span>;
 
+	var fspann = freq == 1 ? <i>n</i> : <>({fspan} * <i>n</i>)</>;
+
 	var rv = [];
 
 	rv.push(
 		<div>
-			Sample<sub>n</sub> = RAM[ ({fspan} * <i>n</i>) &gt;&gt; {shift} ]
+			Sample<sub>n</sub> = RAM[ {fspann} &gt;&gt; {shift} ]
 		</div>
 	);
 	rv.push(
 		<div>
-			Sample<sub>n</sub> = RAM[ ({fspan} * <i>n</i>) / {1 << shift} ]
+			Sample<sub>n</sub> = RAM[ {fspann} / {1 << shift} ]
 		</div>
 	);
 
@@ -91,17 +94,22 @@ function NoteDisplay(props) {
 
 	var best_res = 0;
 	var best_freq = 0;
+	var actual = 0;
 	for (var res = 0; res < 8; ++res) {
-		var tmp = Math.round(f * (1 << calc_shift(res, wave)));
+		const shift = (1 << calc_shift(res, wave));
+		const tmp = Math.round(f * shift);
 		if (tmp >= 0x10000) break;
 		best_res = res;
 		best_freq = tmp;
+
+		actual = sr / ( 256 * shift / tmp);
 	}
 
 	[best_res, best_freq] = simplify(best_res, best_freq);
 
 	return (
 		<>
+			<div>Note: { actual.toFixed(2)} Hz</div> 
 			<div>Wave Size: 256</div>
 			<div>Resolution: {best_res}</div>
 			<div>Frequency: {best_freq}</div>
@@ -165,8 +173,10 @@ function HyperDisplay(props) {
 
 
 function TimerDisplay(props) {
-	var {osc, time } = props;
+	var {osc, duration } = props;
 
+
+	const [time, units] = DurationSplit(duration);
 	const sr = calc_sr(osc);
 
 	const cycles = time * sr;
@@ -182,6 +192,7 @@ function TimerDisplay(props) {
 
 	var best_res = 0;
 	var best_freq = 0;
+	var actual = 0;
 
 	best = []
 	for (var res = 0; res < 8; ++res) {
@@ -189,7 +200,7 @@ function TimerDisplay(props) {
 		var f = Math.round(shift * 256 / cycles);
 		if (f >= 0x10000) continue; // break;
 
-		var actual = Math.ceil(256 * shift / f);
+		actual = Math.ceil(256 * shift / f);
 
 		best_res = res;
 		best_freq = f;
@@ -198,8 +209,15 @@ function TimerDisplay(props) {
 	[best_res, best_freq] = simplify(best_res, best_freq);
 	var best_shift = calc_shift(best_res, size);
 
+	switch(units) {
+	case "s": break;
+	case "ms": actual *= 1000; break;
+	case "ticks": actual *= 60; break;
+	}
+
 	return (
 		<>
+			<div>Time: { actual ? (actual / sr).toFixed(2) + " " + units : "N/A" }</div>
 			<div>Resolution: {best_res ? best_res : "N/A"}</div>
 			<div>Frequency: {best_freq ? best_freq : "N/A"}</div>
 			<SampleDisplay freq={best_freq} shift={best_shift} />
@@ -417,7 +435,7 @@ export class Application extends preact.Component {
 					<label>Duration</label> <DurationInput value={duration} onChange={this._durationChange} />
 				</div>
 
-				<TimerDisplay osc={osc} time={DurationToSeconds(duration)} />
+				<TimerDisplay osc={osc} duration={duration} />
 			</>
 		);
 	}

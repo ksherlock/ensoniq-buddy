@@ -13,6 +13,18 @@ function split_value(x) {
 	return [ "", 0];
 }
 
+export function DurationToUnits(x) {
+
+	let [ time, unit ] = split_value(x);
+	switch (+unit) {
+		case 0: "seconds"; // seconds;
+		case 1: "milliseconds" ; // milliseconds;
+		case 2: "ticks"; // ticks
+		default: return "";
+	}
+
+}
+
 export function DurationToSeconds(x) {
 
 	let [ time, unit ] = split_value(x);
@@ -22,6 +34,18 @@ export function DurationToSeconds(x) {
 		case 2: return +time / 60; // ticks
 		default: return 0;
 	}
+}
+
+export function DurationSplit(x) {
+
+	let [ time, unit ] = split_value(x);
+	switch (+unit) {
+		case 0: return [+time, "s"]; // seconds;
+		case 1: return [+time / 1000, "ms"]; // milliseconds;
+		case 2: return [+time / 60, "ticks"]; // ticks
+		default: return [0, ""];
+	}
+
 }
 
 export class DurationInput extends preact.Component {

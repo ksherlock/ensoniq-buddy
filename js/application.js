@@ -272,6 +272,19 @@ function DurationToSeconds(x) {
       return 0;
   }
 }
+function DurationSplit(x) {
+  let [time, unit] = split_value2(x);
+  switch (+unit) {
+    case 0:
+      return [+time, "s"];
+    case 1:
+      return [+time / 1e3, "ms"];
+    case 2:
+      return [+time / 60, "ticks"];
+    default:
+      return [0, ""];
+  }
+}
 var DurationInput = class extends preact.Component {
   constructor(props) {
     super(props);
@@ -358,16 +371,19 @@ function simplify(res, freq) {
 }
 function SampleDisplay(props) {
   var { shift, freq } = props;
+  if (freq == 0)
+    return [];
   var freq2 = log2(freq);
   var fspan = /* @__PURE__ */ preact.h("span", {
     title: "Frequency"
   }, freq);
+  var fspann = freq == 1 ? /* @__PURE__ */ preact.h("i", null, "n") : /* @__PURE__ */ preact.h(preact.Fragment, null, "(", fspan, " * ", /* @__PURE__ */ preact.h("i", null, "n"), ")");
   var rv = [];
   rv.push(
-    /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ (", fspan, " * ", /* @__PURE__ */ preact.h("i", null, "n"), ") >> ", shift, " ]")
+    /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", fspann, " >> ", shift, " ]")
   );
   rv.push(
-    /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ (", fspan, " * ", /* @__PURE__ */ preact.h("i", null, "n"), ") / ", 1 << shift, " ]")
+    /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", fspann, " / ", 1 << shift, " ]")
   );
   if (freq2) {
     if (freq2 >= shift) {
@@ -393,15 +409,18 @@ function NoteDisplay(props) {
   const f = note_frq / (sr / (1 << 8 + wave));
   var best_res = 0;
   var best_freq = 0;
+  var actual = 0;
   for (var res = 0; res < 8; ++res) {
-    var tmp = Math.round(f * (1 << calc_shift(res, wave)));
+    const shift = 1 << calc_shift(res, wave);
+    const tmp = Math.round(f * shift);
     if (tmp >= 65536)
       break;
     best_res = res;
     best_freq = tmp;
+    actual = sr / (256 * shift / tmp);
   }
   [best_res, best_freq] = simplify(best_res, best_freq);
-  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, "Wave Size: 256"), /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq));
+  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, "Note: ", actual.toFixed(2), " Hz"), /* @__PURE__ */ preact.h("div", null, "Wave Size: 256"), /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq));
 }
 function ResampleDisplay(props) {
   var { osc, size, freq } = props;
@@ -431,25 +450,37 @@ function HyperDisplay(props) {
   return /* @__PURE__ */ preact.h("div", null, "Relative: ", relative);
 }
 function TimerDisplay(props) {
-  var { osc, time } = props;
+  var { osc, duration } = props;
+  const [time, units] = DurationSplit(duration);
   const sr = calc_sr(osc);
   const cycles = time * sr;
   const size = 0;
   var best_res = 0;
   var best_freq = 0;
+  var actual = 0;
   best = [];
   for (var res = 0; res < 8; ++res) {
     var shift = 1 << calc_shift(res, size);
     var f = Math.round(shift * 256 / cycles);
     if (f >= 65536)
       continue;
-    var actual = Math.ceil(256 * shift / f);
+    actual = Math.ceil(256 * shift / f);
     best_res = res;
     best_freq = f;
   }
   [best_res, best_freq] = simplify(best_res, best_freq);
   var best_shift = calc_shift(best_res, size);
-  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res ? best_res : "N/A"), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq ? best_freq : "N/A"), /* @__PURE__ */ preact.h(SampleDisplay, {
+  switch (units) {
+    case "s":
+      break;
+    case "ms":
+      actual *= 1e3;
+      break;
+    case "ticks":
+      actual *= 60;
+      break;
+  }
+  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, "Time: ", actual ? (actual / sr).toFixed(2) + " " + units : "N/A"), /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res ? best_res : "N/A"), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq ? best_freq : "N/A"), /* @__PURE__ */ preact.h(SampleDisplay, {
     freq: best_freq,
     shift: best_shift
   }));
@@ -621,7 +652,7 @@ var Application = class extends preact.Component {
       onChange: this._durationChange
     })), /* @__PURE__ */ preact.h(TimerDisplay, {
       osc,
-      time: DurationToSeconds(duration)
+      duration
     }));
   }
   hyperChildren() {

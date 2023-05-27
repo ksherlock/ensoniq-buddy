@@ -94,22 +94,19 @@ function NoteDisplay(props) {
 
 	var best_res = 0;
 	var best_freq = 0;
-	var actual = 0;
 	for (var res = 0; res < 8; ++res) {
 		const shift = (1 << calc_shift(res, wave));
 		const tmp = Math.round(f * shift);
 		if (tmp >= 0x10000) break;
 		best_res = res;
 		best_freq = tmp;
-
-		actual = sr / ( 256 * shift / tmp);
 	}
 
 	[best_res, best_freq] = simplify(best_res, best_freq);
 
 	return (
 		<>
-			<div>Note: { actual.toFixed(2)} Hz</div> 
+			<RateDisplay wave={0} osc={osc} freq={best_freq} res={best_res} />
 			<div>Wave Size: 256</div>
 			<div>Resolution: {best_res}</div>
 			<div>Frequency: {best_freq}</div>
@@ -117,6 +114,20 @@ function NoteDisplay(props) {
 
 	);
 }
+
+function RateDisplay(props) {
+	const { osc, wave, freq, res} = props;
+
+	const sr = calc_sr(osc);
+
+	const shift = (1 << calc_shift(res, wave));
+	const size = 256 << wave;
+
+	const rate = sr / (size * shift / freq);
+
+	return <div>Rate: {rate.toFixed(2)} Hz</div>;
+}
+
 
 function ResampleDisplay(props) {
 
@@ -355,6 +366,8 @@ export class Application extends preact.Component {
 				<div>
 					<label>Frequency</label> <Frequency value={freq} onChange={this._freqChange} />
 				</div>
+
+				<RateDisplay wave={wave} osc={osc} freq={freq} shift={shift} res={res} />
 
 				<SampleDisplay freq={freq} shift={shift} />
 			</>

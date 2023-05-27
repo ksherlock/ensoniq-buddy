@@ -409,7 +409,6 @@ function NoteDisplay(props) {
   const f = note_frq / (sr / (1 << 8 + wave));
   var best_res = 0;
   var best_freq = 0;
-  var actual = 0;
   for (var res = 0; res < 8; ++res) {
     const shift = 1 << calc_shift(res, wave);
     const tmp = Math.round(f * shift);
@@ -417,10 +416,22 @@ function NoteDisplay(props) {
       break;
     best_res = res;
     best_freq = tmp;
-    actual = sr / (256 * shift / tmp);
   }
   [best_res, best_freq] = simplify(best_res, best_freq);
-  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, "Note: ", actual.toFixed(2), " Hz"), /* @__PURE__ */ preact.h("div", null, "Wave Size: 256"), /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq));
+  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h(RateDisplay, {
+    wave: 0,
+    osc,
+    freq: best_freq,
+    res: best_res
+  }), /* @__PURE__ */ preact.h("div", null, "Wave Size: 256"), /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq));
+}
+function RateDisplay(props) {
+  const { osc, wave, freq, res } = props;
+  const sr = calc_sr(osc);
+  const shift = 1 << calc_shift(res, wave);
+  const size = 256 << wave;
+  const rate = sr / (size * shift / freq);
+  return /* @__PURE__ */ preact.h("div", null, "Rate: ", rate.toFixed(2), " Hz");
 }
 function ResampleDisplay(props) {
   var { osc, size, freq } = props;
@@ -593,7 +604,13 @@ var Application = class extends preact.Component {
     })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Frequency"), " ", /* @__PURE__ */ preact.h(Frequency, {
       value: freq,
       onChange: this._freqChange
-    })), /* @__PURE__ */ preact.h(SampleDisplay, {
+    })), /* @__PURE__ */ preact.h(RateDisplay, {
+      wave,
+      osc,
+      freq,
+      shift,
+      res
+    }), /* @__PURE__ */ preact.h(SampleDisplay, {
       freq,
       shift
     }));

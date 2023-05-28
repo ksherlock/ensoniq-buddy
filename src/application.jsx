@@ -120,6 +120,7 @@ function NoteDisplay(props) {
 	const { osc, note } = props;
 	return PitchDisplay({osc: osc, pitch: NoteFrequency(note)});
 }
+
 function PitchDisplay(props) {
 
 

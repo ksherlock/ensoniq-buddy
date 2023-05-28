@@ -77,6 +77,7 @@ function SampleDisplay(props) {
 }
 
 
+/*
 function NoteDisplay(props) {
 
 
@@ -114,6 +115,48 @@ function NoteDisplay(props) {
 
 	);
 }
+*/
+function NoteDisplay(props) {
+	const { osc, note } = props;
+	return PitchDisplay({osc: osc, pitch: NoteFrequency(note)});
+}
+function PitchDisplay(props) {
+
+
+	var { osc, pitch } = props;
+
+	const wave = 0; // 256
+
+	const sr = calc_sr(osc);
+
+	const f = pitch / (sr / (1 << (8 + wave)));
+
+	// best_res = 7 - Math.ceil(Math.log2(f)) ?
+	// best_freq = f * (1 << calc_shift(best_res, 0)) ?
+
+	var best_res = 0;
+	var best_freq = 0;
+	for (var res = 0; res < 8; ++res) {
+		const shift = (1 << calc_shift(res, wave));
+		const tmp = Math.round(f * shift);
+		if (tmp >= 0x10000) break;
+		best_res = res;
+		best_freq = tmp;
+	}
+
+	[best_res, best_freq] = simplify(best_res, best_freq);
+
+	return (
+		<>
+			<RateDisplay wave={0} osc={osc} freq={best_freq} res={best_res} />
+			<div>Wave Size: 256</div>
+			<div>Resolution: {best_res}</div>
+			<div>Frequency: {best_freq}</div>
+		</>
+
+	);
+}
+
 
 function RateDisplay(props) {
 	const { osc, wave, freq, res} = props;
@@ -254,6 +297,7 @@ export class Application extends preact.Component {
 		this._resChange = this.resChange.bind(this);
 		this._freqChange = this.freqChange.bind(this);
 		this._noteChange = this.noteChange.bind(this);
+		this._pitchChange = this.pitchChange.bind(this);
 		this._durationChange = this.durationChange.bind(this);
 		this._tabChange = this.tabChange.bind(this);
 		this._asmChange = this.asmChange.bind(this);
@@ -267,6 +311,7 @@ export class Application extends preact.Component {
 			note: C4, assembler: 0, shape: 0,
 			in_freq: 44100, in_size: 0,
 			indeterminate: false,
+			pitch: 440,
 		};
 	}
 
@@ -287,6 +332,15 @@ export class Application extends preact.Component {
 		var v = +e.target.value || 0;
 		this.setState( { res: v } );
 	}
+
+	pitchChange(e) {
+		e.preventDefault();
+		var v = +e.target.value;
+		if (v < 0) v = 0;
+		if (v > 65535) v = 65535;
+		this.setState( { pitch: v } );
+	}
+
 
 	freqChange(e) {
 		e.preventDefault();
@@ -390,6 +444,26 @@ export class Application extends preact.Component {
 				<NoteDisplay osc={osc} note={note} wave={wave} />
 			</>
 		);
+
+	}
+
+	pitchChildren() {
+
+		var { osc, wave, pitch } = this.state;
+
+		return (
+			<>
+				<div>
+					<label>Oscillators</label> <Oscillators value={osc} onChange={this._oscChange} />
+				</div>
+				<div>
+					<label>Pitch</label> <Frequency value={pitch} onChange={this._pitchChange} /> Hz
+				</div>
+
+				<PitchDisplay osc={osc} pitch={pitch} wave={wave} />
+			</>
+		);
+
 
 	}
 
@@ -500,12 +574,14 @@ export class Application extends preact.Component {
 			case 0: children = this.sampleChildren(); break;
 			case 1: children = this.resampleChildren(); break;
 			case 2: children = this.noteChildren(); break;
-			case 3: children = this.waveChildren(); break;
-			case 4: children = this.timerChildren(); break;
-			case 5: children = this.hyperChildren(); break;
+			case 3: children = this.pitchChildren(); break;
+			case 4: children = this.waveChildren(); break;
+			case 5: children = this.timerChildren(); break;
+			case 6: children = this.hyperChildren(); break;
 		}
 
-		var options = ["Sample", "Resample", "Note", "Wave", "Timer", "HyperCard Pitch",].map( (o, ix) => {
+		const Labels = ["Sample", "Resample", "Note", "Pitch", "Wave", "Timer", "HyperCard Pitch"];
+		var options = Labels.map( (o, ix) => {
 			return <option key={ix} value={ix}>{o}</option>;
 		});
 

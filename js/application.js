@@ -402,11 +402,14 @@ function SampleDisplay(props) {
   return rv;
 }
 function NoteDisplay(props) {
-  var { osc, note } = props;
+  const { osc, note } = props;
+  return PitchDisplay({ osc, pitch: NoteFrequency(note) });
+}
+function PitchDisplay(props) {
+  var { osc, pitch } = props;
   const wave = 0;
   const sr = calc_sr(osc);
-  const note_frq = NoteFrequency(note);
-  const f = note_frq / (sr / (1 << 8 + wave));
+  const f = pitch / (sr / (1 << 8 + wave));
   var best_res = 0;
   var best_freq = 0;
   for (var res = 0; res < 8; ++res) {
@@ -504,6 +507,7 @@ var Application = class extends preact.Component {
     this._resChange = this.resChange.bind(this);
     this._freqChange = this.freqChange.bind(this);
     this._noteChange = this.noteChange.bind(this);
+    this._pitchChange = this.pitchChange.bind(this);
     this._durationChange = this.durationChange.bind(this);
     this._tabChange = this.tabChange.bind(this);
     this._asmChange = this.asmChange.bind(this);
@@ -522,7 +526,8 @@ var Application = class extends preact.Component {
       shape: 0,
       in_freq: 44100,
       in_size: 0,
-      indeterminate: false
+      indeterminate: false,
+      pitch: 440
     };
   }
   oscChange(e) {
@@ -539,6 +544,15 @@ var Application = class extends preact.Component {
     e.preventDefault();
     var v = +e.target.value || 0;
     this.setState({ res: v });
+  }
+  pitchChange(e) {
+    e.preventDefault();
+    var v = +e.target.value;
+    if (v < 0)
+      v = 0;
+    if (v > 65535)
+      v = 65535;
+    this.setState({ pitch: v });
   }
   freqChange(e) {
     e.preventDefault();
@@ -629,6 +643,20 @@ var Application = class extends preact.Component {
       wave
     }));
   }
+  pitchChildren() {
+    var { osc, wave, pitch } = this.state;
+    return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Oscillators"), " ", /* @__PURE__ */ preact.h(Oscillators, {
+      value: osc,
+      onChange: this._oscChange
+    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Pitch"), " ", /* @__PURE__ */ preact.h(Frequency, {
+      value: pitch,
+      onChange: this._pitchChange
+    }), " Hz"), /* @__PURE__ */ preact.h(PitchDisplay, {
+      osc,
+      pitch,
+      wave
+    }));
+  }
   waveChildren() {
     var { assembler, shape } = this.state;
     return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Assembler"), " ", /* @__PURE__ */ preact.h(Assembler, {
@@ -710,16 +738,20 @@ var Application = class extends preact.Component {
         children = this.noteChildren();
         break;
       case 3:
-        children = this.waveChildren();
+        children = this.pitchChildren();
         break;
       case 4:
-        children = this.timerChildren();
+        children = this.waveChildren();
         break;
       case 5:
+        children = this.timerChildren();
+        break;
+      case 6:
         children = this.hyperChildren();
         break;
     }
-    var options = ["Sample", "Resample", "Note", "Wave", "Timer", "HyperCard Pitch"].map((o, ix) => {
+    const Labels = ["Sample", "Resample", "Note", "Pitch", "Wave", "Timer", "HyperCard Pitch"];
+    var options = Labels.map((o, ix) => {
       return /* @__PURE__ */ preact.h("option", {
         key: ix,
         value: ix

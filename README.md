@@ -2,7 +2,7 @@
 
 The es5503 calculator
 
-See [ksherlock.github.io/ensoniq-buddy](ksherlock.github.io/ensoniq-buddy/)
+See [ksherlock.github.io/ensoniq-buddy](https://ksherlock.github.io/ensoniq-buddy/)
 
 Developed with [preact](https://github.com/preactjs/preact) and [esbuild](https://github.com/evanw/esbuild).
 

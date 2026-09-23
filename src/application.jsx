@@ -77,45 +77,6 @@ function SampleDisplay(props) {
 }
 
 
-/*
-function NoteDisplay(props) {
-
-
-	var { osc, note } = props;
-
-	const wave = 0; // 256
-
-	const sr = calc_sr(osc);
-	const note_frq = NoteFrequency(note);
-
-	const f = note_frq / (sr / (1 << (8 + wave)));
-
-	// best_res = 7 - Math.ceil(Math.log2(f)) ?
-	// best_freq = f * (1 << calc_shift(best_res, 0)) ?
-
-	var best_res = 0;
-	var best_freq = 0;
-	for (var res = 0; res < 8; ++res) {
-		const shift = (1 << calc_shift(res, wave));
-		const tmp = Math.round(f * shift);
-		if (tmp >= 0x10000) break;
-		best_res = res;
-		best_freq = tmp;
-	}
-
-	[best_res, best_freq] = simplify(best_res, best_freq);
-
-	return (
-		<>
-			<RateDisplay wave={0} osc={osc} freq={best_freq} res={best_res} />
-			<div>Wave Size: 256</div>
-			<div>Resolution: {best_res}</div>
-			<div>Frequency: {best_freq}</div>
-		</>
-
-	);
-}
-*/
 function NoteDisplay(props) {
 	const { osc, note } = props;
 	return PitchDisplay({osc: osc, pitch: NoteFrequency(note)});
@@ -172,6 +133,31 @@ function RateDisplay(props) {
 	return <div>Rate: {rate.toFixed(2)} Hz</div>;
 }
 
+function CycleDisplay(props) {
+	/*
+	 * find smallest n where 
+	 * (freq * n >> res) >= wave size.
+	 *
+	 * (freq * n) / res >= wave size
+	 *
+	 * freq * n >= wave size * res
+	 *
+	 * n >= wave size * res / freq
+	 */
+
+	const { osc, wave, freq, res} = props;
+
+	if (!freq) return <div>Cycles: N/A</div>;
+
+	const wave_size = 256 << wave;
+	const shift = calc_shift(res, wave);
+	const denom = 1 << shift;
+
+	cycles = Math.ceil(wave_size * denom / freq);
+	/* of course, this assumes only 1 osc active and no refresh cycles.  */
+
+	return <div>Cycles: {cycles} / {cycles * (osc + 2)}</div>;
+}
 
 function ResampleDisplay(props) {
 
@@ -275,6 +261,7 @@ function TimerDisplay(props) {
 			<div>Time: { actual ? (actual / sr).toFixed(2) + " " + units : "N/A" }</div>
 			<div>Resolution: {best_res ? best_res : "N/A"}</div>
 			<div>Frequency: {best_freq ? best_freq : "N/A"}</div>
+			<CycleDisplay osc={osc} wave={0} res={best_res} freq={best_freq} />
 			<SampleDisplay freq={best_freq} shift={best_shift} />
 		</>
 	);
@@ -432,6 +419,7 @@ export class Application extends preact.Component {
 				</div>
 
 				<RateDisplay wave={wave} osc={osc} freq={freq} shift={shift} res={res} />
+				<CycleDisplay wave={wave} osc={osc} freq={freq} shift={shift} res={res} />
 
 				<SampleDisplay freq={freq} shift={shift} />
 			</>

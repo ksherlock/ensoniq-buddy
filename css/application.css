@@ -33,3 +33,11 @@ legend a.selected {
 code {
 	line-height: initial;
 }
+
+img.logo {
+	width: 250px;
+	height: 50px;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}

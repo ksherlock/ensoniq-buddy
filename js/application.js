@@ -82,59 +82,60 @@ var NoteInput = class extends preact.Component {
 function mod(a, b) {
   return (a % b + b) % b;
 }
-function sine() {
-  const a = 127;
+function sine(volume) {
   const p = 256;
   var rv = [];
   for (var n = 0; n < 256; ++n) {
-    var x = 128 + Math.round(a * Math.sin(n * Math.PI / 128));
+    var x = 128 + Math.round(volume * Math.sin(n * Math.PI / 128));
     rv.push(x || 1);
   }
   return rv;
 }
-function square() {
+function square(volume) {
   var rv = [];
   for (var n = 0; n < 128; ++n)
-    rv.push(255);
+    rv.push(128 + volume);
   for (var n = 0; n < 128; ++n)
-    rv.push(1);
+    rv.push(128 - volume);
   return rv;
 }
-function triangle() {
+function triangle(volume) {
   var rv = [];
-  const a = 127;
   const p = 256;
   for (var n = 0; n < 256; ++n) {
-    var x = 128 + Math.round(4 * a / p * Math.abs(mod(n - p / 4, p) - p / 2)) - a;
+    var x = 128 + Math.round(4 * volume / p * Math.abs(mod(n - p / 4, p) - p / 2)) - volume;
     rv.push(x || 1);
   }
   return rv;
 }
-function sawtooth() {
+function sawtooth(volume) {
   var rv = [];
-  const a = 127;
   const p = 256;
   for (var n = 0; n < 256; ++n) {
-    var x = 128 + Math.round(a * 2 * (n / p - Math.floor(0.5 + n / p)));
+    var x = 128 + Math.round(volume * 2 * (n / p - Math.floor(0.5 + n / p)));
     rv.push(x || 1);
   }
   return rv;
 }
 function WaveData(props) {
-  var { assembler, shape } = props;
+  var { assembler, shape, volume } = props;
+  if (volume < 1)
+    volume = 1;
+  if (volume > 127)
+    volume = 127;
   var data;
   switch (shape) {
     case 0:
-      data = sine();
+      data = sine(volume);
       break;
     case 1:
-      data = square();
+      data = square(volume);
       break;
     case 2:
-      data = triangle();
+      data = triangle(volume);
       break;
     case 3:
-      data = sawtooth();
+      data = sawtooth(volume);
       break;
   }
   var hex = data.map((x) => x < 16 ? "0" + x.toString(16) : x.toString(16));
@@ -208,7 +209,7 @@ function Resolution(props) {
     onChange: props.onChange
   }, options);
 }
-function Frequency(props) {
+function NumberInput(props) {
   return /* @__PURE__ */ preact.h("input", {
     type: "number",
     min: "0",
@@ -508,6 +509,7 @@ var Application = class extends preact.Component {
     this._freqChange = this.freqChange.bind(this);
     this._noteChange = this.noteChange.bind(this);
     this._pitchChange = this.pitchChange.bind(this);
+    this._volumeChange = this.volumeChange.bind(this);
     this._durationChange = this.durationChange.bind(this);
     this._tabChange = this.tabChange.bind(this);
     this._asmChange = this.asmChange.bind(this);
@@ -527,7 +529,8 @@ var Application = class extends preact.Component {
       in_freq: 44100,
       in_size: 0,
       indeterminate: false,
-      pitch: 440
+      pitch: 440,
+      volume: 127
     };
   }
   oscChange(e) {
@@ -553,6 +556,15 @@ var Application = class extends preact.Component {
     if (v > 65535)
       v = 65535;
     this.setState({ pitch: v });
+  }
+  volumeChange(e) {
+    e.preventDefault();
+    var v = +e.target.value >> 0;
+    if (v < 1)
+      v = 1;
+    if (v > 127)
+      v = 127;
+    this.setState({ volume: v });
   }
   freqChange(e) {
     e.preventDefault();
@@ -615,7 +627,7 @@ var Application = class extends preact.Component {
     })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Resolution"), " ", /* @__PURE__ */ preact.h(Resolution, {
       value: res,
       onChange: this._resChange
-    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Frequency"), " ", /* @__PURE__ */ preact.h(Frequency, {
+    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Frequency"), " ", /* @__PURE__ */ preact.h(NumberInput, {
       value: freq,
       onChange: this._freqChange
     })), /* @__PURE__ */ preact.h(RateDisplay, {
@@ -648,7 +660,7 @@ var Application = class extends preact.Component {
     return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Oscillators"), " ", /* @__PURE__ */ preact.h(Oscillators, {
       value: osc,
       onChange: this._oscChange
-    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Pitch"), " ", /* @__PURE__ */ preact.h(Frequency, {
+    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Pitch"), " ", /* @__PURE__ */ preact.h(NumberInput, {
       value: pitch,
       onChange: this._pitchChange
     }), " Hz"), /* @__PURE__ */ preact.h(PitchDisplay, {
@@ -658,16 +670,20 @@ var Application = class extends preact.Component {
     }));
   }
   waveChildren() {
-    var { assembler, shape } = this.state;
+    var { assembler, shape, volume } = this.state;
     return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Assembler"), " ", /* @__PURE__ */ preact.h(Assembler, {
       value: assembler,
       onChange: this._asmChange
     })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Wave Type"), " ", /* @__PURE__ */ preact.h(WaveShape, {
       value: shape,
       onChange: this._shapeChange
+    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Volume"), " ", /* @__PURE__ */ preact.h(NumberInput, {
+      value: volume,
+      onChange: this._volumeChange
     })), /* @__PURE__ */ preact.h(WaveData, {
       assembler,
-      shape
+      shape,
+      volume
     }));
   }
   resampleChildren() {
@@ -675,7 +691,7 @@ var Application = class extends preact.Component {
     return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Oscillators"), " ", /* @__PURE__ */ preact.h(Oscillators, {
       value: osc,
       onChange: this._oscChange
-    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "In Frequency"), " ", /* @__PURE__ */ preact.h(Frequency, {
+    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "In Frequency"), " ", /* @__PURE__ */ preact.h(NumberInput, {
       value: in_freq,
       onChange: this._inFreqChange
     })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "In Size"), " ", /* @__PURE__ */ preact.h(WaveSize, {
@@ -707,7 +723,7 @@ var Application = class extends preact.Component {
     return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Oscillators"), " ", /* @__PURE__ */ preact.h(Oscillators, {
       value: 32,
       disabled: true
-    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "In Frequency"), " ", /* @__PURE__ */ preact.h(Frequency, {
+    })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "In Frequency"), " ", /* @__PURE__ */ preact.h(NumberInput, {
       value: in_freq,
       onChange: this._inFreqChange
     })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Indeterminate"), /* @__PURE__ */ preact.h(CheckBox, {

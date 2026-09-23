@@ -4,36 +4,34 @@ function mod(a,b) {
 	return ((a % b) + b) % b;
 }
 
-function sine() {
+function sine(volume) {
 
-	const a = 127;
 	const p = 256;
 
 	var rv = [];
 	for (var n = 0; n < 256; ++n) {
-		var x = 128 + Math.round(a * Math.sin(n * Math.PI / 128));
+		var x = 128 + Math.round(volume * Math.sin(n * Math.PI / 128));
 		rv.push( x || 1 );
 	}
 	return rv;
 
 }
 
-function square() {
+function square(volume) {
 
 	var rv = [];
-	for (var n = 0; n < 128; ++n) rv.push(255);
-	for (var n = 0; n < 128; ++n) rv.push(1);
+	for (var n = 0; n < 128; ++n) rv.push(128 + volume);
+	for (var n = 0; n < 128; ++n) rv.push(128 - volume);
 	return rv;
 }
 
-function triangle() {
+function triangle(volume) {
 	// 0x80 -> 0xff [25%] -> 0x80 [50%] -> 0x01 [75%] -> 0x80 [100%]
 	var rv = [];
 
-	const a = 127;
 	const p = 256;
 	for (var n = 0; n < 256; ++n) {
-		var x = 128 + Math.round(4*a/p * Math.abs(mod(n-p/4, p) - p/2)) - a;
+		var x = 128 + Math.round(4*volume/p * Math.abs(mod(n-p/4, p) - p/2)) - volume;
 		rv.push(x || 1);
 
 	}
@@ -41,14 +39,13 @@ function triangle() {
 }
 
 
-function sawtooth() {
+function sawtooth(volume) {
 
 	var rv = [];
 
-	const a = 127;
 	const p = 256;
 	for (var n = 0; n < 256; ++n) {
-		var x = 128 + Math.round(a * 2 * (n/p  - Math.floor(.5 + n/p)));
+		var x = 128 + Math.round(volume * 2 * (n/p  - Math.floor(.5 + n/p)));
 		rv.push(x || 1);
 	}
 	return rv;
@@ -58,14 +55,17 @@ function sawtooth() {
 export function WaveData(props) {
 
 
-	var {assembler, shape} = props;
+	var {assembler, shape, volume} = props;
+
+	if (volume < 1) volume = 1;
+	if (volume > 127) volume = 127;
 
 	var data;
 	switch(shape) {
-		case 0: data = sine(); break;
-		case 1: data = square(); break;
-		case 2: data = triangle(); break;
-		case 3: data = sawtooth(); break;
+		case 0: data = sine(volume); break;
+		case 1: data = square(volume); break;
+		case 2: data = triangle(volume); break;
+		case 3: data = sawtooth(volume); break;
 	}
 
 	var hex = data.map( (x) => x < 0x10 ? "0" + x.toString(16) : x.toString(16) );

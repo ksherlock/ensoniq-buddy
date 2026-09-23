@@ -40,7 +40,7 @@ export function Resolution(props) {
 	return <select value={props.value} onChange={props.onChange}>{options}</select>;
 }
 
-export function Frequency(props) {
+export function NumberInput(props) {
 
 	/* number, min, max are not as strict as they ought to be */
 	return <input type="number" min="0" max="65535" value={props.value} onChange={props.onChange} />;

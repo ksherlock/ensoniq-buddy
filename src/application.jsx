@@ -6,7 +6,7 @@ import { calc_sr, calc_shift, log2 } from './utils';
 import { NoteInput, NoteFrequency } from './note_input';
 import { WaveData } from './wave_data';
 
-import { Oscillators, WaveSize, Resolution, Frequency, Assembler, WaveShape, CheckBox } from './input';
+import { Oscillators, WaveSize, Resolution, NumberInput, Assembler, WaveShape, CheckBox } from './input';
 
 import { DurationInput, DurationSplit } from './duration_input';
 
@@ -299,6 +299,7 @@ export class Application extends preact.Component {
 		this._freqChange = this.freqChange.bind(this);
 		this._noteChange = this.noteChange.bind(this);
 		this._pitchChange = this.pitchChange.bind(this);
+		this._volumeChange = this.volumeChange.bind(this);
 		this._durationChange = this.durationChange.bind(this);
 		this._tabChange = this.tabChange.bind(this);
 		this._asmChange = this.asmChange.bind(this);
@@ -313,6 +314,7 @@ export class Application extends preact.Component {
 			in_freq: 44100, in_size: 0,
 			indeterminate: false,
 			pitch: 440,
+			volume: 127
 		};
 	}
 
@@ -342,6 +344,13 @@ export class Application extends preact.Component {
 		this.setState( { pitch: v } );
 	}
 
+	volumeChange(e) {
+		e.preventDefault();
+		var v = +e.target.value >> 0;
+		if (v < 1) v = 1;
+		if (v > 127) v = 127;
+		this.setState( { volume: v } );
+	}
 
 	freqChange(e) {
 		e.preventDefault();
@@ -419,7 +428,7 @@ export class Application extends preact.Component {
 					<label>Resolution</label> <Resolution value={res} onChange={this._resChange} />
 				</div>
 				<div>
-					<label>Frequency</label> <Frequency value={freq} onChange={this._freqChange} />
+					<label>Frequency</label> <NumberInput value={freq} onChange={this._freqChange} />
 				</div>
 
 				<RateDisplay wave={wave} osc={osc} freq={freq} shift={shift} res={res} />
@@ -458,7 +467,7 @@ export class Application extends preact.Component {
 					<label>Oscillators</label> <Oscillators value={osc} onChange={this._oscChange} />
 				</div>
 				<div>
-					<label>Pitch</label> <Frequency value={pitch} onChange={this._pitchChange} /> Hz
+					<label>Pitch</label> <NumberInput value={pitch} onChange={this._pitchChange} /> Hz
 				</div>
 
 				<PitchDisplay osc={osc} pitch={pitch} wave={wave} />
@@ -470,7 +479,7 @@ export class Application extends preact.Component {
 
 	waveChildren() {
 
-		var { assembler, shape } = this.state;
+		var { assembler, shape, volume } = this.state;
 		return (
 			<>
 				<div>
@@ -481,7 +490,11 @@ export class Application extends preact.Component {
 					<label>Wave Type</label> <WaveShape value={shape} onChange={this._shapeChange} />
 				</div>
 
-				<WaveData assembler={assembler} shape={shape} />
+				<div>
+					<label>Volume</label> <NumberInput value={volume} onChange={this._volumeChange} />
+				</div>
+
+				<WaveData assembler={assembler} shape={shape} volume={volume} />
 			</>
 		);
 	}
@@ -498,7 +511,7 @@ export class Application extends preact.Component {
 				</div>
 
 				<div>
-					<label>In Frequency</label> <Frequency value={in_freq} onChange={this._inFreqChange} />
+					<label>In Frequency</label> <NumberInput value={in_freq} onChange={this._inFreqChange} />
 				</div>
 
 				<div>
@@ -542,7 +555,7 @@ export class Application extends preact.Component {
 				</div>
 
 				<div>
-					<label>In Frequency</label> <Frequency value={in_freq} onChange={this._inFreqChange} />
+					<label>In Frequency</label> <NumberInput value={in_freq} onChange={this._inFreqChange} />
 				</div>
 
 				<div>

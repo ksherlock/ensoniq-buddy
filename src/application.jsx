@@ -111,9 +111,9 @@ function PitchDisplay(props) {
 	return (
 		<>
 			<RateDisplay wave={0} osc={osc} freq={best_freq} res={best_res} />
-			<div>Wave Size: 256</div>
-			<div>Resolution: {best_res}</div>
-			<div>Frequency: {best_freq}</div>
+			<div><label>Wave Size</label> 256</div>
+			<div><label>Resolution</label> {best_res}</div>
+			<div><label>Frequency</label> {best_freq}</div>
 		</>
 
 	);
@@ -130,7 +130,7 @@ function RateDisplay(props) {
 
 	const rate = sr / (size * shift / freq);
 
-	return <div>Rate: {rate.toFixed(2)} Hz</div>;
+	return <div><label>Rate</label> {rate.toFixed(2)} Hz</div>;
 }
 
 function CycleDisplay(props) {
@@ -147,7 +147,7 @@ function CycleDisplay(props) {
 
 	const { osc, wave, freq, res} = props;
 
-	if (!freq) return <div>Cycles: N/A</div>;
+	if (!freq) return <div><label>Cycles</label> N/A</div>;
 
 	const wave_size = 256 << wave;
 	const shift = calc_shift(res, wave);
@@ -156,7 +156,7 @@ function CycleDisplay(props) {
 	cycles = Math.ceil(wave_size * denom / freq);
 	/* of course, this assumes only 1 osc active and no refresh cycles.  */
 
-	return <div>Cycles: {cycles} / {cycles * (osc + 2)}</div>;
+	return <div><label>Cycles</label> {cycles} / {cycles * (osc + 2)}</div>;
 }
 
 function ResampleDisplay(props) {
@@ -183,8 +183,8 @@ function ResampleDisplay(props) {
 
 	return (
 		<>
-			<div>Resolution: {best_res}</div>
-			<div>Frequency: {best_freq}</div>
+			<div><label>Resolution</label> {best_res}</div>
+			<div><label>Frequency</label> {best_freq}</div>
 			<SampleDisplay freq={best_freq} shift={best_shift} />
 		</>
 	);
@@ -208,7 +208,7 @@ function HyperDisplay(props) {
 	const relative = offset < 0 ? -offset + 0x8000 : offset;
 
 	return (
-		<div>Relative: {relative}</div>
+		<div><label>Relative</label> {relative}</div>
 	);
 }
 
@@ -258,9 +258,9 @@ function TimerDisplay(props) {
 
 	return (
 		<>
-			<div>Time: { actual ? (actual / sr).toFixed(2) + " " + units : "N/A" }</div>
-			<div>Resolution: {best_res ? best_res : "N/A"}</div>
-			<div>Frequency: {best_freq ? best_freq : "N/A"}</div>
+			<div><label>Time</label> { actual ? (actual / sr).toFixed(2) + " " + units : "N/A" }</div>
+			<div><label>Resolution</label> {best_res ? best_res : "N/A"}</div>
+			<div><label>Frequency</label> {best_freq ? best_freq : "N/A"}</div>
 			<CycleDisplay osc={osc} wave={0} res={best_res} freq={best_freq} />
 			<SampleDisplay freq={best_freq} shift={best_shift} />
 		</>

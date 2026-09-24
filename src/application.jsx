@@ -10,6 +10,8 @@ import { Oscillators, WaveSize, Resolution, NumberInput, Assembler, WaveShape, C
 
 import { DurationInput, DurationSplit } from './duration_input';
 
+import { RegisterTable } from './registers';
+
 const C4 = 4*12;
 
 
@@ -580,9 +582,10 @@ export class Application extends preact.Component {
 			case 4: children = this.waveChildren(); break;
 			case 5: children = this.timerChildren(); break;
 			case 6: children = this.hyperChildren(); break;
+			case 7: children = <RegisterTable />; break;
 		}
 
-		const Labels = ["Sample", "Resample", "Note", "Pitch", "Wave", "Timer", "HyperCard Pitch"];
+		const Labels = ["Sample", "Resample", "Note", "Pitch", "Wave", "Timer", "HyperCard Pitch", "Registers"];
 		var options = Labels.map( (o, ix) => {
 			return <option key={ix} value={ix}>{o}</option>;
 		});

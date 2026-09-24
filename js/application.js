@@ -70,38 +70,38 @@ function mod(a, b) {
 }
 function sine(volume) {
   const p = 256;
-  var rv = [];
+  var rv2 = [];
   for (var n = 0; n < 256; ++n) {
     var x = 128 + Math.round(volume * Math.sin(n * Math.PI / 128));
-    rv.push(x || 1);
+    rv2.push(x || 1);
   }
-  return rv;
+  return rv2;
 }
 function square(volume) {
-  var rv = [];
+  var rv2 = [];
   for (var n = 0; n < 128; ++n)
-    rv.push(128 + volume);
+    rv2.push(128 + volume);
   for (var n = 0; n < 128; ++n)
-    rv.push(128 - volume);
-  return rv;
+    rv2.push(128 - volume);
+  return rv2;
 }
 function triangle(volume) {
-  var rv = [];
+  var rv2 = [];
   const p = 256;
   for (var n = 0; n < 256; ++n) {
     var x = 128 + Math.round(4 * volume / p * Math.abs(mod(n - p / 4, p) - p / 2)) - volume;
-    rv.push(x || 1);
+    rv2.push(x || 1);
   }
-  return rv;
+  return rv2;
 }
 function sawtooth(volume) {
-  var rv = [];
+  var rv2 = [];
   const p = 256;
   for (var n = 0; n < 256; ++n) {
     var x = 128 + Math.round(volume * 2 * (n / p - Math.floor(0.5 + n / p)));
-    rv.push(x || 1);
+    rv2.push(x || 1);
   }
-  return rv;
+  return rv2;
 }
 function WaveData(props) {
   var { assembler, shape, volume } = props;
@@ -180,6 +180,12 @@ function Resolution(props) {
 }
 function NumberInput(props) {
   return /* @__PURE__ */ preact.h("input", { type: "number", min: "0", max: "65535", value: props.value, onChange: props.onChange });
+}
+function Mode(props) {
+  var options = [] = ["Free Run", "One Shot", "Sync", "Swap"].map((nm, ix) => {
+    return /* @__PURE__ */ preact.h("option", { value: ix, key: ix }, nm);
+  });
+  return /* @__PURE__ */ preact.h("select", { value: props.value, onChange: props.onChange }, options);
 }
 function Assembler(props) {
   var options = ["Merlin", "ORCA/M", "MPW"].map((o, ix) => {
@@ -292,6 +298,130 @@ var DurationInput = class extends preact.Component {
   }
 };
 
+// src/registers.jsx
+function to_bin(x) {
+  var i;
+  rv = [];
+  for (i = 0; i < 8; ++i) {
+    rv.push(x & 1);
+    x >>= 1;
+  }
+  rv.push("%");
+  return rv.reverse().join("");
+}
+var SoundControl = class extends preact.Component {
+  constructor(props) {
+    super(props);
+    this._docramChange = this.docramChange.bind(this);
+    this._autoincChange = this.autoincChange.bind(this);
+    this.state = {
+      docram: 1,
+      autoinc: true
+    };
+  }
+  docramChange(e) {
+    this.setState({ docram: +e.target.value });
+  }
+  autoincChange(e) {
+    this.setState({ autoinc: e.target.checked });
+  }
+  render() {
+    const { docram, autoinc } = this.state;
+    let x = 0;
+    let or_value = 0;
+    let and_value = 0;
+    if (docram)
+      or_value |= 64;
+    else
+      and_value |= 64;
+    if (autoinc)
+      or_value |= 32;
+    else
+      and_value |= 32;
+    x = [+docram, +autoinc].join("");
+    var code = [];
+    code.push("    lda $C03C\n");
+    if (and_value)
+      code.push(`    and #${to_bin(and_value)}
+`);
+    if (or_value)
+      code.push(`    ora #${to_bin(or_value)}
+`);
+    code.push("    sta $C03C\n");
+    return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("h3", { class: "register" }, "Sound Control Register ($C03C)"), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "DOC"), " ", /* @__PURE__ */ preact.h("input", { type: "radio", value: "0", name: "docram", onClick: this._docramChange, checked: docram === 0 })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "RAM"), " ", /* @__PURE__ */ preact.h("input", { type: "radio", value: "1", name: "docram", onClick: this._docramChange, checked: docram === 1 })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Increment"), " ", /* @__PURE__ */ preact.h(CheckBox, { onClick: this._autoincChange, checked: autoinc })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Value"), " ", /* @__PURE__ */ preact.h("code", null, "%0", x, "xxxxx")));
+  }
+};
+var OscillatorControl = class extends preact.Component {
+  constructor(props) {
+    super(props);
+    this._channelChange = this.channelChange.bind(this);
+    this._interruptChange = this.interruptChange.bind(this);
+    this._modeChange = this.modeChange.bind(this);
+    this._haltedChange = this.haltedChange.bind(this);
+    this.state = {
+      channel: 0,
+      interrupt: false,
+      mode: 0,
+      halted: false
+    };
+  }
+  channelChange(e) {
+    let v = e.target.value;
+    if (v < 0)
+      v = 0;
+    if (v > 15)
+      v = 15;
+    this.setState({ channel: v });
+  }
+  modeChange(e) {
+    this.setState({ mode: +e.target.value });
+  }
+  haltedChange(e) {
+    this.setState({ halted: e.target.checked });
+  }
+  interruptChange(e) {
+    this.setState({ interrupt: e.target.checked });
+  }
+  render() {
+    const { channel, interrupt, mode, halted } = this.state;
+    let x = 0;
+    x = channel << 4;
+    x |= mode << 1;
+    if (interrupt)
+      x |= 8;
+    if (halted)
+      x |= 1;
+    return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("h3", { class: "register" }, "Oscillator Control Register ($A0-$BF)"), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Mode"), " ", /* @__PURE__ */ preact.h(Mode, { onChange: this._modeChange, value: mode })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Channel"), " ", /* @__PURE__ */ preact.h(NumberInput, { onChange: this._channelChange, value: channel })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Interrupt"), " ", /* @__PURE__ */ preact.h(CheckBox, { onChange: this._interruptChange, checked: interrupt })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Halted"), " ", /* @__PURE__ */ preact.h(CheckBox, { onChange: this._haltedChange, checked: halted })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Value"), " ", /* @__PURE__ */ preact.h("code", null, to_bin(x))));
+  }
+};
+var WaveTableSize = class extends preact.Component {
+  constructor(props) {
+    super(props);
+    this._sizeChange = this.sizeChange.bind(this);
+    this._resChange = this.resChange.bind(this);
+    this.state = {
+      res: 0,
+      size: 0
+    };
+  }
+  sizeChange(e) {
+    this.setState({ size: e.target.value });
+  }
+  resChange(e) {
+    this.setState({ res: e.target.value });
+  }
+  render() {
+    const { res, size } = this.state;
+    let x = 0;
+    x = res;
+    x |= size << 3;
+    return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("h3", { class: "register" }, "Wave Table Size Register ($C0-$DF)"), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Size"), " ", /* @__PURE__ */ preact.h(WaveSize, { value: size, onChange: this._sizeChange })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Resolution"), " ", /* @__PURE__ */ preact.h(Resolution, { value: res, onChange: this._resChange })), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Value"), " ", /* @__PURE__ */ preact.h("code", null, to_bin(x))));
+  }
+};
+function RegisterTable() {
+  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("table", null, /* @__PURE__ */ preact.h("caption", null, "IIgs Registers"), /* @__PURE__ */ preact.h("colgroup", null, /* @__PURE__ */ preact.h("col", { class: "first" }), /* @__PURE__ */ preact.h("col", null)), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$C03C"), /* @__PURE__ */ preact.h("td", null, "Sound Control Register")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$C03D"), /* @__PURE__ */ preact.h("td", null, "Data Register")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$C03E-$C03F"), /* @__PURE__ */ preact.h("td", null, "Address Register"))), /* @__PURE__ */ preact.h("table", null, /* @__PURE__ */ preact.h("caption", null, "Ensoniq Registers"), /* @__PURE__ */ preact.h("colgroup", null, /* @__PURE__ */ preact.h("col", { class: "first" }), /* @__PURE__ */ preact.h("col", null)), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$00-$1F"), /* @__PURE__ */ preact.h("td", null, "Frequency Low")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$20-$3F"), /* @__PURE__ */ preact.h("td", null, "Frequency High")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$40-$5F"), /* @__PURE__ */ preact.h("td", null, "Volume")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$60-$7F"), /* @__PURE__ */ preact.h("td", null, "Wavetable Data Sample")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$80-$9F"), /* @__PURE__ */ preact.h("td", null, "Wavetable Pointer")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$A0-$BF"), /* @__PURE__ */ preact.h("td", null, "Control")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$C0-$DF"), /* @__PURE__ */ preact.h("td", null, "Wavetable Size")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$E0"), /* @__PURE__ */ preact.h("td", null, "Oscillator Interrupt Register")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$E1"), /* @__PURE__ */ preact.h("td", null, "Oscillator Enable Register")), /* @__PURE__ */ preact.h("tr", null, /* @__PURE__ */ preact.h("td", null, "$E2"), /* @__PURE__ */ preact.h("td", null, "A/D Converter"))), /* @__PURE__ */ preact.h(SoundControl, null), /* @__PURE__ */ preact.h(OscillatorControl, null), /* @__PURE__ */ preact.h(WaveTableSize, null));
+}
+
 // src/application.jsx
 var C4 = 4 * 12;
 function nmultiply(x) {
@@ -315,28 +445,28 @@ function SampleDisplay(props) {
   var freq2 = log2(freq);
   var fspan = /* @__PURE__ */ preact.h("span", { title: "Frequency" }, freq);
   var fspann = freq == 1 ? /* @__PURE__ */ preact.h("i", null, "n") : /* @__PURE__ */ preact.h(preact.Fragment, null, "(", fspan, " * ", /* @__PURE__ */ preact.h("i", null, "n"), ")");
-  var rv = [];
-  rv.push(
+  var rv2 = [];
+  rv2.push(
     /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", fspann, " >> ", shift, " ]")
   );
-  rv.push(
+  rv2.push(
     /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", fspann, " / ", 1 << shift, " ]")
   );
   if (freq2) {
     if (freq2 >= shift) {
-      rv.push(
+      rv2.push(
         /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", nmultiply(freq / (1 << shift)), " ]")
       );
     } else {
-      rv.push(
+      rv2.push(
         /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", nmultiply(freq >> freq2), " >> ", shift - freq2, " ]")
       );
-      rv.push(
+      rv2.push(
         /* @__PURE__ */ preact.h("div", null, "Sample", /* @__PURE__ */ preact.h("sub", null, "n"), " = RAM[ ", nmultiply(freq >> freq2), " / ", 1 << shift - freq2, " ]")
       );
     }
   }
-  return rv;
+  return rv2;
 }
 function NoteDisplay(props) {
   const { osc, note } = props;
@@ -358,7 +488,7 @@ function PitchDisplay(props) {
     best_freq = tmp;
   }
   [best_res, best_freq] = simplify(best_res, best_freq);
-  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h(RateDisplay, { wave: 0, osc, freq: best_freq, res: best_res }), /* @__PURE__ */ preact.h("div", null, "Wave Size: 256"), /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq));
+  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h(RateDisplay, { wave: 0, osc, freq: best_freq, res: best_res }), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Wave Size"), " 256"), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Resolution"), " ", best_res), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Frequency"), " ", best_freq));
 }
 function RateDisplay(props) {
   const { osc, wave, freq, res } = props;
@@ -366,17 +496,17 @@ function RateDisplay(props) {
   const shift = 1 << calc_shift(res, wave);
   const size = 256 << wave;
   const rate = sr / (size * shift / freq);
-  return /* @__PURE__ */ preact.h("div", null, "Rate: ", rate.toFixed(2), " Hz");
+  return /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Rate"), " ", rate.toFixed(2), " Hz");
 }
 function CycleDisplay(props) {
   const { osc, wave, freq, res } = props;
   if (!freq)
-    return /* @__PURE__ */ preact.h("div", null, "Cycles: N/A");
+    return /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Cycles"), " N/A");
   const wave_size = 256 << wave;
   const shift = calc_shift(res, wave);
   const denom = 1 << shift;
   cycles = Math.ceil(wave_size * denom / freq);
-  return /* @__PURE__ */ preact.h("div", null, "Cycles: ", cycles, " / ", cycles * (osc + 2));
+  return /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Cycles"), " ", cycles, " / ", cycles * (osc + 2));
 }
 function ResampleDisplay(props) {
   var { osc, size, freq } = props;
@@ -393,14 +523,14 @@ function ResampleDisplay(props) {
   }
   [best_res, best_freq] = simplify(best_res, best_freq);
   var best_shift = calc_shift(best_res, size);
-  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq), /* @__PURE__ */ preact.h(SampleDisplay, { freq: best_freq, shift: best_shift }));
+  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Resolution"), " ", best_res), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Frequency"), " ", best_freq), /* @__PURE__ */ preact.h(SampleDisplay, { freq: best_freq, shift: best_shift }));
 }
 function HyperDisplay(props) {
   var { pitch, freq } = props;
   const r = freq * 261.63 / (26320 * pitch);
   const offset = Math.round(3072 * Math.log2(r));
   const relative = offset < 0 ? -offset + 32768 : offset;
-  return /* @__PURE__ */ preact.h("div", null, "Relative: ", relative);
+  return /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Relative"), " ", relative);
 }
 function TimerDisplay(props) {
   var { osc, duration } = props;
@@ -433,7 +563,7 @@ function TimerDisplay(props) {
       actual *= 60;
       break;
   }
-  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, "Time: ", actual ? (actual / sr).toFixed(2) + " " + units : "N/A"), /* @__PURE__ */ preact.h("div", null, "Resolution: ", best_res ? best_res : "N/A"), /* @__PURE__ */ preact.h("div", null, "Frequency: ", best_freq ? best_freq : "N/A"), /* @__PURE__ */ preact.h(CycleDisplay, { osc, wave: 0, res: best_res, freq: best_freq }), /* @__PURE__ */ preact.h(SampleDisplay, { freq: best_freq, shift: best_shift }));
+  return /* @__PURE__ */ preact.h(preact.Fragment, null, /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Time"), " ", actual ? (actual / sr).toFixed(2) + " " + units : "N/A"), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Resolution"), " ", best_res ? best_res : "N/A"), /* @__PURE__ */ preact.h("div", null, /* @__PURE__ */ preact.h("label", null, "Frequency"), " ", best_freq ? best_freq : "N/A"), /* @__PURE__ */ preact.h(CycleDisplay, { osc, wave: 0, res: best_res, freq: best_freq }), /* @__PURE__ */ preact.h(SampleDisplay, { freq: best_freq, shift: best_shift }));
 }
 var Application = class extends preact.Component {
   constructor(props) {
@@ -613,8 +743,11 @@ var Application = class extends preact.Component {
       case 6:
         children = this.hyperChildren();
         break;
+      case 7:
+        children = /* @__PURE__ */ preact.h(RegisterTable, null);
+        break;
     }
-    const Labels = ["Sample", "Resample", "Note", "Pitch", "Wave", "Timer", "HyperCard Pitch"];
+    const Labels = ["Sample", "Resample", "Note", "Pitch", "Wave", "Timer", "HyperCard Pitch", "Registers"];
     var options = Labels.map((o, ix) => {
       return /* @__PURE__ */ preact.h("option", { key: ix, value: ix }, o);
     });

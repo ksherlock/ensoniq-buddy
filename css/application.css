@@ -42,3 +42,42 @@ img.logo {
 	margin-left: auto;
 	margin-right: auto;
 }
+
+table {
+	width: 100%;
+	border-top: 1px solid black;
+	border-collapse: collapse;
+	margin-bottom: 2ex;
+	line-height: initial;
+}
+
+td:first-child {
+    font-family: monospace ;
+}
+
+col.first {
+	width: 10em;
+	font-family: monospace;
+}
+
+caption {
+	font-weight: bold;
+}
+
+div.register label {
+	display: initial;
+	widht: auto;
+}
+div.register label:after {
+	content: initial;
+}
+
+h3.register {
+	font-size: 100%;
+	font-weight: bold;
+	text-align: center;
+	margin: 0;
+	padding: 0;
+	border-bottom: 1px solid black;
+
+}

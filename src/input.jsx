@@ -46,6 +46,14 @@ export function NumberInput(props) {
 	return <input type="number" min="0" max="65535" value={props.value} onChange={props.onChange} />;
 }
 
+export function Mode(props) {
+
+	var options = [] = ["Free Run", "One Shot", "Sync", "Swap"].map( (nm, ix) => {
+		return <option value={ix} key={ix}>{nm}</option>
+
+	});
+	return <select value={props.value} onChange={props.onChange}>{options}</select>;
+}
 
 
 export function Assembler(props) {
